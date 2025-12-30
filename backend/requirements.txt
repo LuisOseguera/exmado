@@ -1,0 +1,45 @@
+# FastAPI y servidor
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Base de datos
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# Tareas asíncronas
+celery==5.3.6
+redis==5.0.1
+
+# Procesamiento de datos
+pandas==2.2.0
+openpyxl==3.1.2  # Para leer/escribir Excel
+
+# Conversión de imágenes/PDFs
+Pillow==10.2.0
+pdf2image==1.17.0
+img2pdf==0.5.1
+
+# HTTP cliente para DocuWare
+httpx==0.26.0
+requests==2.31.0
+
+# Utilidades
+python-dotenv==1.0.1
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# WebSocket para actualizaciones en tiempo real
+python-socketio==5.11.0
+
+# Validación y utilidades
+email-validator==2.1.0
+python-jose[cryptography]==3.3.0
+
+# Logging
+loguru==0.7.2
+
+# Testing (opcional para desarrollo)
+pytest==7.4.4
+pytest-asyncio==0.23.3
+httpx==0.26.0  # Para testing de FastAPI
