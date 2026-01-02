@@ -8,8 +8,8 @@ from loguru import logger
 from app.config import settings, ensure_directories
 from app.database import init_db
 
-# TODO: Importar los routers cuando estén creados
-# from app.api import jobs, docuware, websocket
+# Importar routers
+from app.api import jobs, excel, docuware, websocket
 
 
 @asynccontextmanager
@@ -95,10 +95,13 @@ async def root():
     }
 
 
-# TODO: Incluir routers
-# app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
-# app.include_router(docuware.router, prefix="/api/docuware", tags=["DocuWare"])
-# app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
+# Incluir routers
+from app.api import jobs, excel, docuware, websocket
+
+app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
+app.include_router(excel.router, prefix="/api/excel", tags=["Excel"])
+app.include_router(docuware.router, prefix="/api/docuware", tags=["DocuWare"])
+app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 
 
 if __name__ == "__main__":

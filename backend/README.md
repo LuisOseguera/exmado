@@ -86,11 +86,15 @@ O si no usás Docker, instalá Redis localmente:
 ### 6. Iniciar la aplicación
 
 ```bash
-# En una terminal: FastAPI
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Terminal 1: Iniciar Redis
+docker-compose up -d
 
-# En otra terminal: Celery worker (cuando esté implementado)
-celery -A app.celery_worker worker --loglevel=info
+# Terminal 2: Iniciar Celery Worker
+bash start_worker.sh
+# O: celery -A app.celery_app worker --loglevel=info --pool=solo
+
+# Terminal 3: Iniciar FastAPI
+python app/main.py
 ```
 
 ## Verificar Instalación
@@ -124,13 +128,22 @@ Los logs se guardan en:
 pytest tests/
 ```
 
-## Próximos Pasos de Desarrollo
+## 📝 Próximos Pasos de Desarrollo
 
-- [ ] Implementar endpoints de API en `app/api/`
-- [ ] Implementar servicios de negocio en `app/services/`
-- [ ] Implementar tareas de Celery en `app/tasks/`
-- [ ] Agregar tests
-- [ ] Documentar API
+### ✅ Completado
+
+- [x] Modelos de base de datos
+- [x] Schemas de Pydantic
+- [x] Servicios de negocio
+- [x] Endpoints de API REST
+- [x] Tareas de Celery
+
+### 🚧 Pendiente
+
+- [ ] Integración completa WebSocket
+- [ ] Tests unitarios
+- [ ] Frontend (Fase 2)
+- [ ] Documentación de usuario
 
 ## Solución de Problemas
 
