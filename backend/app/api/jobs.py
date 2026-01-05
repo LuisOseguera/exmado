@@ -15,7 +15,6 @@ from app.schemas import (
     JobResponse,
     JobListResponse,
     JobRecordResponse,
-    JobLogResponse,
     JobLogsResponse,
 )
 from app.api.deps import get_current_user
@@ -55,15 +54,15 @@ def create_job(
 
         logger.info(f"✓ Job creado: {new_job.id}")
 
-        # Encolar tarea de Celery (opcional: solo si no es modo prueba manual)
-        auto_start = job_data.config.get("auto_start", False)
-        if auto_start:
+        # Auto-iniciar si está configurado
+        if job_data.config.auto_start:
             from app.tasks.download_task import process_job
 
             task = process_job.delay(new_job.id)
             new_job.celery_task_id = task.id
             new_job.status = JobStatus.RUNNING
             db.commit()
+            db.refresh(new_job)
             logger.info(f"✓ Tarea de Celery encolada: {task.id}")
 
         return new_job.to_dict()

@@ -2,7 +2,7 @@
 Endpoints para subir y validar archivos Excel.
 """
 
-from typing import List, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from pathlib import Path
 import shutil

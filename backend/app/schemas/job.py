@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.models.job import JobStatus
@@ -62,6 +62,10 @@ class JobConfig(BaseModel):
 
     test_mode_limit: int = Field(
         default=10, description="Cantidad de registros a procesar en modo prueba"
+    )
+
+    auto_start: bool = Field(
+        default=False, description="Iniciar automáticamente el job al crearlo"
     )
 
 

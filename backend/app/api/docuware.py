@@ -3,9 +3,10 @@ Endpoints para interactuar con DocuWare.
 Permite probar conexión, listar cabinets, diálogos y campos.
 """
 
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
+import requests
 
 from app.services import DocuWareClient
 from app.api.deps import get_docuware_client
@@ -52,35 +53,77 @@ def list_file_cabinets(client: DocuWareClient = Depends(get_docuware_client)):
         # Endpoint de DocuWare para listar cabinets
         cabinets_url = f"{settings.DOCUWARE_URL}/FileCabinets"
 
+        logger.info(f"Obteniendo cabinets desde: {cabinets_url}")
+
         response = client.session.get(cabinets_url, timeout=settings.DOCUWARE_TIMEOUT)
 
-        if response.status_code == 200:
-            data = response.json()
-            cabinets = data.get("FileCabinet", [])
-
-            # Extraer información relevante
-            cabinet_list = [
-                {
-                    "id": cabinet.get("Id"),
-                    "name": cabinet.get("Name"),
-                    "type": cabinet.get("Type"),
-                }
-                for cabinet in cabinets
-            ]
-
-            logger.info(f"✓ Listados {len(cabinet_list)} cabinets")
-
-            return {"cabinets": cabinet_list, "total": len(cabinet_list)}
-        else:
+        if response.status_code != 200:
+            logger.error(f"DocuWare respondió con el estatus {response.status_code}")
+            logger.error(f"Texto de respuesta: {response.text[:500]}")
             raise HTTPException(
                 status_code=response.status_code,
-                detail=f"Error al listar cabinets: {response.text}",
+                detail=f"Error al listar cabinets: {response.text[:200]}",
             )
+
+        # Verificar que la respuesta sea JSON
+        content_type = response.headers.get("content-type", "")
+        if "json" not in content_type.lower():
+            logger.error(f"DocuWare no retornó JSON. Content-Type: {content_type}")
+            logger.error(f"Cuerpo de respuesta: {response.text[:1000]}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"DocuWare retornó formato inválido: {content_type}",
+            )
+
+        # Intentar parsear JSON
+        try:
+            data = response.json()
+        except ValueError as e:
+            logger.error(f"Error al parsear JSON: {str(e)}")
+            logger.error(f"Texto de respuesta: {response.text[:1000]}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"DocuWare retornó JSON inválido: {str(e)}",
+            )
+
+        # DocuWare puede retornar la lista con diferentes keys
+        cabinets_raw = data.get("FileCabinet", data.get("fileCabinet", []))
+
+        if not cabinets_raw:
+            logger.warning("No se encontraron cabinets en la respuesta")
+            logger.debug(f"Respuesta completa: {data}")
+            # Retornar lista vacía en lugar de error
+            return {"cabinets": [], "total": 0}
+
+        # Extraer información relevante
+        cabinet_list = []
+        for cabinet in cabinets_raw:
+            try:
+                cabinet_list.append(
+                    {
+                        "id": cabinet.get("Id", cabinet.get("id")),
+                        "name": cabinet.get("Name", cabinet.get("name", "Sin nombre")),
+                        "type": cabinet.get("Type", cabinet.get("type", "FileCabinet")),
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Error al procesar cabinet: {str(e)}")
+                continue
+
+        logger.info(f"✓ Listados {len(cabinet_list)} cabinets")
+
+        return {"cabinets": cabinet_list, "total": len(cabinet_list)}
 
     except HTTPException:
         raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"✗ Error de conexión con DocuWare: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"No se pudo conectar con DocuWare: {str(e)}",
+        )
     except Exception as e:
-        logger.error(f"✗ Error al listar cabinets: {str(e)}")
+        logger.error(f"✗ Error inesperado al listar cabinets: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar cabinets: {str(e)}",
@@ -168,17 +211,61 @@ def list_cabinet_fields(
             data = response.json()
             fields = data.get("Fields", [])
 
+            # DEBUG: Log raw response structure to understand DocuWare's format
+            if fields:
+                logger.debug(f"Raw field sample (first field): {fields[0]}")
+                logger.debug(f"Available keys in field: {list(fields[0].keys())}")
+            else:
+                logger.warning("No fields found in cabinet response")
+                logger.debug(f"Full response data keys: {list(data.keys())}")
+
+            def get_db_name(field: dict) -> str:
+                """Extract db_name checking multiple possible property names."""
+                return (
+                    field.get("DBName")
+                    or field.get("DBFieldName")
+                    or field.get("FieldName")
+                    or field.get("Name")
+                    or ""
+                )
+
+            def get_display_name(field: dict) -> str:
+                """Extract display_name checking multiple possible property names."""
+                return (
+                    field.get("DisplayName")
+                    or field.get("Label")
+                    or field.get("Name")
+                    or ""
+                )
+
+            def get_field_type(field: dict) -> str:
+                """Extract field type checking multiple possible property names."""
+                return (
+                    field.get("DWFieldType")
+                    or field.get("FieldType")
+                    or field.get("Type")
+                    or ""
+                )
+
             # Extraer información relevante de cada campo
             field_list = [
                 {
-                    "db_name": field.get("DBName"),
-                    "display_name": field.get("DisplayName"),
-                    "type": field.get("DWFieldType"),
+                    "db_name": get_db_name(field),
+                    "display_name": get_display_name(field),
+                    "type": get_field_type(field),
                     "length": field.get("Length"),
                     "is_required": field.get("IsRequired", False),
                 }
                 for field in fields
             ]
+
+            # Log si algún campo no tiene db_name después del procesamiento
+            fields_without_dbname = [f for f in field_list if not f["db_name"]]
+            if fields_without_dbname:
+                logger.warning(
+                    f"{len(fields_without_dbname)} campo(s) sin db_name después del procesamiento"
+                )
+                logger.debug(f"Campos sin db_name: {fields_without_dbname}")
 
             logger.info(f"✓ Listados {len(field_list)} campos")
 

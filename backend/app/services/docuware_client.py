@@ -30,17 +30,39 @@ class DocuWareClient:
         try:
             self.session = requests.Session()
 
-            # Endpoint de autenticación de DocuWare
-            auth_url = f"{self.base_url}/Account/Logon"
+            # Configurar headers por defecto para todas las peticiones
+            self.session.headers.update(
+                {
+                    "Accept": "application/json",
+                }
+            )
 
+            # Construir URL de autenticación
+            auth_url = f"{self.base_url.rstrip('/')}/Account/Logon"
+
+            # Datos de autenticación (form-urlencoded)
             auth_data = {
-                "UserName": self.username,
+                "Username": self.username,  # Importante: Username con U mayúscula
                 "Password": self.password,
-                "Organization": "",  # Opcional, depende de tu setup
                 "RememberMe": False,
             }
 
-            response = self.session.post(auth_url, json=auth_data, timeout=self.timeout)
+            # Headers específicos para autenticación
+            auth_headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
+            }
+
+            logger.debug(f"Intentando autenticación en: {auth_url}")
+            logger.debug(f"Username: {self.username}")
+
+            # Usar data= en lugar de json= (form-urlencoded)
+            response = self.session.post(
+                auth_url,
+                data=auth_data,
+                headers=auth_headers,
+                timeout=self.timeout,
+            )
 
             if response.status_code == 200:
                 self._authenticated = True
@@ -48,6 +70,7 @@ class DocuWareClient:
                 return True
             else:
                 logger.error(f"✗ Error de autenticación: {response.status_code}")
+                logger.error(f"Cuerpo de respuesta: {response.text[:500]}")
                 return False
 
         except Exception as e:
@@ -255,7 +278,7 @@ class DocuWareClient:
                 # DocuWare logout
                 logout_url = f"{self.base_url}/Account/Logoff"
                 self.session.post(logout_url, timeout=5)
-            except:
+            except Exception:
                 pass
             finally:
                 self.session.close()
