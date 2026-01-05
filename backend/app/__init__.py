@@ -1,17 +1,7 @@
 """
-Módulo de modelos de base de datos.
-Importa todos los modelos para que SQLAlchemy los reconozca.
+Paquete principal de Éxmado Backend.
+Sistema de autoservicio para descarga masiva de documentos desde DocuWare.
 """
 
-from app.models.job import Job, JobStatus
-from app.models.job_record import JobRecord, RecordStatus
-from app.models.job_log import JobLog, LogLevel
-
-__all__ = [
-    "Job",
-    "JobStatus",
-    "JobRecord",
-    "RecordStatus",
-    "JobLog",
-    "LogLevel",
-]
+__version__ = "1.0.0"
+__app_name__ = "Éxmado"

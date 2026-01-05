@@ -94,7 +94,7 @@ bash start_worker.sh
 # O: celery -A app.celery_app worker --loglevel=info --pool=solo
 
 # Terminal 3: Iniciar FastAPI
-python app/main.py
+python -m app.main
 ```
 
 ## Verificar Instalación

@@ -95,9 +95,6 @@ async def root():
     }
 
 
-# Incluir routers
-from app.api import jobs, excel, docuware, websocket
-
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(excel.router, prefix="/api/excel", tags=["Excel"])
 app.include_router(docuware.router, prefix="/api/docuware", tags=["DocuWare"])
