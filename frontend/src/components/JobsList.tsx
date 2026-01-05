@@ -149,7 +149,7 @@ export default function JobsList({
               <ListItemIcon>{config.icon}</ListItemIcon>
               <ListItemText
                 primary={
-                  <Box>
+                  <>
                     <Typography variant="body1" noWrap>
                       {job.excel_file_name}
                     </Typography>
@@ -160,10 +160,10 @@ export default function JobsList({
                         sx={{ mt: 1, mb: 0.5 }}
                       />
                     )}
-                  </Box>
+                  </>
                 }
                 secondary={
-                  <Box>
+                  <>
                     <Typography variant="caption" display="block">
                       {format(new Date(job.created_at), "PPp", { locale: es })}
                     </Typography>
@@ -179,7 +179,7 @@ export default function JobsList({
                         {job.total_files_downloaded} archivos
                       </Typography>
                     )}
-                  </Box>
+                  </>
                 }
               />
             </ListItemButton>

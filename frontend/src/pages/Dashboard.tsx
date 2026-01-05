@@ -15,8 +15,9 @@ import {
   History as HistoryIcon,
 } from "@mui/icons-material";
 
-import JobsList from "@/components/JobsList";
-import { CreateJobWizard, JobDetails } from "@/components/Stubs";
+import JobsList from "../components/JobsList";
+import CreateJobWizard from "../components/CreateJobWizard";
+import JobDetails from "../components/JobDetails";
 
 interface TabPanelProps {
   children?: React.ReactNode;
