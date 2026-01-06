@@ -45,7 +45,9 @@ Toda la configuración de la aplicación se gestiona a través de variables de e
 2.  **Editar `.env`**:
     Abre el archivo `.env` y rellena las variables con tus credenciales de DocuWare y la configuración de la base de datos.
 
-## 🚀 Instalación y Ejecución
+## 🚀 Instalación y Ejecución (Método Recomendado: Docker)
+
+El entorno de desarrollo está completamente dockerizado. Con Docker, puedes levantar todos los servicios del backend (API, Worker y Redis) con un solo comando.
 
 ### 1. Clonar el Repositorio
 
@@ -55,51 +57,26 @@ git clone https://github.com/LuisOseguera/exmado.git
 cd exmado/backend
 ```
 
-### 2. Crear y Activar el Entorno Virtual
+### 2. Configurar el Entorno
 
-Es una buena práctica aislar las dependencias del proyecto.
+Copia el archivo de configuración de ejemplo y edítalo con tus credenciales de DocuWare.
 ```bash
-python -m venv venv
-
-# En Windows
-venv\Scripts\activate
-
-# En Linux/Mac
-source venv/bin/activate
+cp .env.example .env
+nano .env  # O usa tu editor favorito
 ```
 
-### 3. Instalar Dependencias
+### 3. Levantar los Servicios
 
-Instala todas las librerías de Python necesarias.
+Ejecuta Docker Compose para construir las imágenes e iniciar los contenedores.
 ```bash
-pip install -r requirements.txt
+docker-compose up --build
 ```
+-   La primera vez, `--build` es necesario para construir la imagen de la aplicación.
+-   Verás los logs de la API y el Worker en tu terminal.
+-   Para detener los servicios, presiona `Ctrl+C`.
+-   Para ejecutar en segundo plano, usa `docker-compose up -d`.
 
-### 4. Iniciar Servicios Externos
-
-La aplicación depende de Redis para la cola de tareas. La forma más sencilla de iniciarlo es con Docker.
-```bash
-docker-compose up -d
-```
-Esto levantará un contenedor de Redis en segundo plano.
-
-### 5. Ejecutar la Aplicación
-
-Para que el sistema funcione completamente, necesitas dos procesos corriendo en terminales separadas:
-
-**Terminal 1: Iniciar el Servidor Web (API REST)**
-```bash
-python -m app.main
-```
-El servidor estará disponible en `http://localhost:8000`.
-
-**Terminal 2: Iniciar el Worker Asíncrono (Celery)**
-```bash
-bash start_worker.sh
-# O, manualmente:
-# celery -A app.celery_app worker --loglevel=info --pool=solo
-```
-El worker es el encargado de procesar las descargas de documentos en segundo plano.
+¡Y eso es todo! El entorno completo del backend estará funcionando.
 
 ## ✅ Verificación
 

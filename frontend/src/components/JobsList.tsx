@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   List,
   ListItem,
@@ -10,7 +9,8 @@ import {
   CircularProgress,
   Typography,
   LinearProgress,
-} from "@mui/material";
+  ChipProps,
+} from '@mui/material';
 import {
   CheckCircle as CompletedIcon,
   Error as ErrorIcon,
@@ -18,12 +18,12 @@ import {
   PlayArrow as RunningIcon,
   Pause as PausedIcon,
   Cancel as CancelledIcon,
-} from "@mui/icons-material";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+} from '@mui/icons-material';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-import { jobsApi } from "@/services/api";
-import { JobStatus, type Job } from "@/types";
+import { JobStatus, type Job } from '@/types';
+import { useJobsList } from '@/hooks/api/jobs';
 
 interface JobsListProps {
   statusFilter?: string[];
@@ -33,47 +33,47 @@ interface JobsListProps {
 
 const statusConfig: Record<
   JobStatus,
-  { icon: React.ReactElement; color: any; label: string }
+  { icon: React.ReactElement; color: ChipProps['color']; label: string }
 > = {
   [JobStatus.PENDING]: {
     icon: <PendingIcon />,
-    color: "default",
-    label: "Pendiente",
+    color: 'default',
+    label: 'Pendiente',
   },
   [JobStatus.VALIDATING]: {
     icon: <PendingIcon />,
-    color: "info",
-    label: "Validando",
+    color: 'info',
+    label: 'Validando',
   },
   [JobStatus.RUNNING]: {
     icon: <RunningIcon />,
-    color: "primary",
-    label: "En ejecución",
+    color: 'primary',
+    label: 'En ejecución',
   },
   [JobStatus.PAUSED]: {
     icon: <PausedIcon />,
-    color: "warning",
-    label: "Pausado",
+    color: 'warning',
+    label: 'Pausado',
   },
   [JobStatus.COMPLETED]: {
     icon: <CompletedIcon />,
-    color: "success",
-    label: "Completado",
+    color: 'success',
+    label: 'Completado',
   },
   [JobStatus.COMPLETED_WITH_ERRORS]: {
     icon: <ErrorIcon />,
-    color: "warning",
-    label: "Con errores",
+    color: 'warning',
+    label: 'Con errores',
   },
   [JobStatus.FAILED]: {
     icon: <ErrorIcon />,
-    color: "error",
-    label: "Fallido",
+    color: 'error',
+    label: 'Fallido',
   },
   [JobStatus.CANCELLED]: {
     icon: <CancelledIcon />,
-    color: "default",
-    label: "Cancelado",
+    color: 'default',
+    label: 'Cancelado',
   },
 };
 
@@ -82,15 +82,11 @@ export default function JobsList({
   onJobSelect,
   selectedJobId,
 }: JobsListProps) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["jobs", statusFilter],
-    queryFn: () => jobsApi.list({ limit: 50 }),
-    refetchInterval: 5000, // Refrescar cada 5 segundos
-  });
+  const { data, isLoading, error } = useJobsList({ limit: 50 });
 
   if (isLoading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
         <CircularProgress />
       </Box>
     );
@@ -112,7 +108,7 @@ export default function JobsList({
 
   if (filteredJobs.length === 0) {
     return (
-      <Box sx={{ p: 4, textAlign: "center" }}>
+      <Box sx={{ p: 4, textAlign: 'center' }}>
         <Typography color="text.secondary">
           No hay jobs en esta categoría
         </Typography>
@@ -121,7 +117,7 @@ export default function JobsList({
   }
 
   return (
-    <List sx={{ width: "100%", bgcolor: "background.paper" }}>
+    <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
       {filteredJobs.map((job: Job) => {
         const config = statusConfig[job.status];
         const isSelected = selectedJobId === job.id;
@@ -165,7 +161,7 @@ export default function JobsList({
                 secondary={
                   <>
                     <Typography variant="caption" display="block">
-                      {format(new Date(job.created_at), "PPp", { locale: es })}
+                      {format(new Date(job.created_at), 'PPp', { locale: es })}
                     </Typography>
                     {isActive && (
                       <Typography variant="caption" color="primary">
@@ -175,7 +171,7 @@ export default function JobsList({
                     )}
                     {job.status === JobStatus.COMPLETED && (
                       <Typography variant="caption" color="success.main">
-                        {job.successful_records} exitosos,{" "}
+                        {job.successful_records} exitosos,{' '}
                         {job.total_files_downloaded} archivos
                       </Typography>
                     )}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import {
   Dialog,
   DialogTitle,
@@ -28,21 +28,27 @@ import {
   Alert,
   CircularProgress,
   Chip,
-} from "@mui/material";
+} from '@mui/material';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
-} from "@mui/icons-material";
-import { useDropzone } from "react-dropzone";
-import { useSnackbar } from "notistack";
+} from '@mui/icons-material';
+import { useDropzone } from 'react-dropzone';
+import { useSnackbar } from 'notistack';
+import { AxiosError } from 'axios';
 
-import { jobsApi, excelApi, docuwareApi } from "../services/api";
+import { jobsApi, excelApi } from '../services/api';
+import {
+  useCabinets,
+  useDialogs,
+  useFields,
+} from '../hooks/api/docuware';
 import type {
   CreateJobRequest,
   ExcelValidation,
   SearchFieldMapping,
-} from "../types";
+} from '../types';
 
 interface CreateJobWizardProps {
   open: boolean;
@@ -51,11 +57,11 @@ interface CreateJobWizardProps {
 }
 
 const steps = [
-  "Subir Excel",
-  "DocuWare",
-  "Mapeo de Campos",
-  "Configuración",
-  "Resumen",
+  'Subir Excel',
+  'DocuWare',
+  'Mapeo de Campos',
+  'Configuración',
+  'Resumen',
 ];
 
 export default function CreateJobWizard({
@@ -70,37 +76,23 @@ export default function CreateJobWizard({
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [excelValidation, setExcelValidation] =
     useState<ExcelValidation | null>(null);
-  const [selectedCabinetId, setSelectedCabinetId] = useState("");
-  const [selectedDialogId, setSelectedDialogId] = useState("");
+  const [selectedCabinetId, setSelectedCabinetId] = useState('');
+  const [selectedDialogId, setSelectedDialogId] = useState('');
   const [fieldMappings, setFieldMappings] = useState<SearchFieldMapping[]>([
-    { excel_column: "", docuware_field: "" },
+    { excel_column: '', docuware_field: '' },
   ]);
-  const [outputDirectory, setOutputDirectory] = useState("./output");
-  const [fileFilters] = useState<string[]>(["pdf", "tif"]);
+  const [outputDirectory, setOutputDirectory] = useState('./output');
+  const [fileFilters] = useState<string[]>(['pdf', 'tif']);
   const [tifToPdf, setTifToPdf] = useState(true);
-  const [renamePattern, setRenamePattern] = useState("");
+  const [renamePattern, setRenamePattern] = useState('');
   const [folderStructure, setFolderStructure] = useState<string[]>([]);
   const [testMode, setTestMode] = useState(true);
   const [testModeLimit, setTestModeLimit] = useState(10);
 
   // Queries
-  const { data: cabinetsData } = useQuery({
-    queryKey: ["docuware-cabinets"],
-    queryFn: docuwareApi.listCabinets,
-    enabled: activeStep >= 1,
-  });
-
-  const { data: dialogsData } = useQuery({
-    queryKey: ["docuware-dialogs", selectedCabinetId],
-    queryFn: () => docuwareApi.listDialogs(selectedCabinetId),
-    enabled: !!selectedCabinetId,
-  });
-
-  const { data: fieldsData } = useQuery({
-    queryKey: ["docuware-fields", selectedCabinetId],
-    queryFn: () => docuwareApi.listFields(selectedCabinetId),
-    enabled: !!selectedCabinetId,
-  });
+  const { data: cabinetsData } = useCabinets();
+  const { data: dialogsData } = useDialogs(selectedCabinetId);
+  const { data: fieldsData } = useFields(selectedCabinetId);
 
   // Mutations
   const uploadMutation = useMutation({
@@ -108,33 +100,25 @@ export default function CreateJobWizard({
     onSuccess: (data) => {
       setExcelValidation(data);
       if (data.is_valid) {
-        enqueueSnackbar("Excel validado exitosamente", { variant: "success" });
+        enqueueSnackbar('Excel validado exitosamente', { variant: 'success' });
         setActiveStep(1);
       } else {
-        enqueueSnackbar("Excel tiene errores", { variant: "error" });
+        enqueueSnackbar('Excel tiene errores', { variant: 'error' });
       }
-    },
-    onError: (error: any) => {
-      enqueueSnackbar(
-        `Error: ${error.response?.data?.detail || error.message}`,
-        {
-          variant: "error",
-        }
-      );
     },
   });
 
   const createJobMutation = useMutation({
     mutationFn: (jobData: CreateJobRequest) => jobsApi.create(jobData),
     onSuccess: (data) => {
-      enqueueSnackbar("Job creado exitosamente", { variant: "success" });
+      enqueueSnackbar('Job creado exitosamente', { variant: 'success' });
       onJobCreated(data.id);
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ detail: string }>) => {
       enqueueSnackbar(
         `Error: ${error.response?.data?.detail || error.message}`,
         {
-          variant: "error",
+          variant: 'error',
         }
       );
     },
@@ -143,10 +127,10 @@ export default function CreateJobWizard({
   // Dropzone para Excel
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+        '.xlsx',
       ],
-      "application/vnd.ms-excel": [".xls"],
+      'application/vnd.ms-excel': ['.xls'],
     },
     maxFiles: 1,
     onDrop: (acceptedFiles) => {
@@ -178,13 +162,13 @@ export default function CreateJobWizard({
     if (!excelFile || !excelValidation) return;
 
     const jobData: CreateJobRequest = {
-      user_name: "usuario_actual",
+      user_name: 'usuario_actual',
       excel_file_name: excelFile.name,
       output_directory: outputDirectory,
       config: {
         cabinet_name:
           cabinetsData?.cabinets.find((c) => c.id === selectedCabinetId)
-            ?.name || "",
+            ?.name || '',
         cabinet_id: selectedCabinetId,
         dialog_id: selectedDialogId,
         search_fields: fieldMappings.filter(
@@ -210,7 +194,7 @@ export default function CreateJobWizard({
   const addFieldMapping = () => {
     setFieldMappings([
       ...fieldMappings,
-      { excel_column: "", docuware_field: "" },
+      { excel_column: '', docuware_field: '' },
     ]);
   };
 
@@ -253,21 +237,21 @@ export default function CreateJobWizard({
               {...getRootProps()}
               sx={{
                 p: 4,
-                textAlign: "center",
-                border: "2px dashed",
-                borderColor: isDragActive ? "primary.main" : "grey.400",
-                bgcolor: isDragActive ? "action.hover" : "background.paper",
-                cursor: "pointer",
+                textAlign: 'center',
+                border: '2px dashed',
+                borderColor: isDragActive ? 'primary.main' : 'grey.400',
+                bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+                cursor: 'pointer',
               }}
             >
               <input {...getInputProps()} />
               <UploadIcon
-                sx={{ fontSize: 60, color: "text.secondary", mb: 2 }}
+                sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }}
               />
               <Typography variant="h6" gutterBottom>
                 {isDragActive
-                  ? "Suelta el archivo aquí"
-                  : "Arrastra un archivo Excel o haz clic para seleccionar"}
+                  ? 'Suelta el archivo aquí'
+                  : 'Arrastra un archivo Excel o haz clic para seleccionar'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Formatos soportados: .xlsx, .xls
@@ -288,12 +272,12 @@ export default function CreateJobWizard({
             {excelValidation && (
               <Box sx={{ mt: 2 }}>
                 <Alert
-                  severity={excelValidation.is_valid ? "success" : "error"}
+                  severity={excelValidation.is_valid ? 'success' : 'error'}
                 >
                   <Typography variant="body2">
                     {excelValidation.is_valid
                       ? `✓ Excel válido: ${excelValidation.total_rows} filas, ${excelValidation.columns.length} columnas`
-                      : "Excel tiene errores"}
+                      : 'Excel tiene errores'}
                   </Typography>
                 </Alert>
                 {excelValidation.columns && (
@@ -302,7 +286,7 @@ export default function CreateJobWizard({
                       Columnas detectadas:
                     </Typography>
                     <Box
-                      sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}
+                      sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}
                     >
                       {excelValidation.columns.map((col) => (
                         <Chip key={col} label={col} size="small" />
@@ -314,7 +298,7 @@ export default function CreateJobWizard({
             )}
 
             {uploadMutation.isPending && (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
                 <CircularProgress />
               </Box>
             )}
@@ -379,11 +363,11 @@ export default function CreateJobWizard({
                     <TableCell>
                       <FormControl fullWidth size="small">
                         <Select
-                          value={mapping.excel_column || ""}
+                          value={mapping.excel_column || ''}
                           onChange={(e) =>
                             updateFieldMapping(
                               index,
-                              "excel_column",
+                              'excel_column',
                               e.target.value
                             )
                           }
@@ -403,7 +387,7 @@ export default function CreateJobWizard({
                     <TableCell>
                       <FormControl fullWidth size="small">
                         <Select
-                          value={mapping.docuware_field || ""}
+                          value={mapping.docuware_field || ''}
                           onChange={(e) => {
                             console.log(
                               `Cambiando campo ${index} a:`,
@@ -411,7 +395,7 @@ export default function CreateJobWizard({
                             );
                             updateFieldMapping(
                               index,
-                              "docuware_field",
+                              'docuware_field',
                               e.target.value
                             );
                           }}
@@ -423,7 +407,7 @@ export default function CreateJobWizard({
                           {fieldsData?.fields.map((field, fieldIndex) => (
                             <MenuItem
                               key={`docuware-${field.db_name || fieldIndex}`}
-                              value={field.db_name || ""}
+                              value={field.db_name || ''}
                             >
                               {field.display_name} ({field.db_name})
                             </MenuItem>
@@ -530,7 +514,7 @@ export default function CreateJobWizard({
                     <strong>Registros</strong>
                   </TableCell>
                   <TableCell>
-                    {testMode ? testModeLimit : excelValidation?.total_rows} de{" "}
+                    {testMode ? testModeLimit : excelValidation?.total_rows} de{' '}
                     {excelValidation?.total_rows}
                   </TableCell>
                 </TableRow>
@@ -614,7 +598,7 @@ export default function CreateJobWizard({
             {createJobMutation.isPending ? (
               <CircularProgress size={24} />
             ) : (
-              "Crear Job"
+              'Crear Job'
             )}
           </Button>
         )}

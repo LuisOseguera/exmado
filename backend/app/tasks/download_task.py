@@ -5,15 +5,15 @@ Esta tarea se ejecuta en segundo plano y procesa documentos de DocuWare.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
-import asyncio
+from typing import Any
+
 from loguru import logger
 
 from app.celery_app import celery_app
-from app.database import SessionLocal
-from app.models import Job, JobRecord, JobLog, JobStatus, RecordStatus, LogLevel
-from app.services import DocuWareClient, ExcelParser, FileTransformer, FolderOrganizer
 from app.config import settings
+from app.database import SessionLocal
+from app.models import Job, JobLog, JobRecord, JobStatus, LogLevel, RecordStatus
+from app.services import DocuWareClient, ExcelParser, FileTransformer, FolderOrganizer
 
 
 @celery_app.task(bind=True, name="app.tasks.download_task.process_job")
@@ -145,7 +145,7 @@ def process_job(self, job_id: str):
         db.close()
 
 
-def _process_excel(job: Job, db) -> Dict[str, Any]:
+def _process_excel(job: Job, db) -> dict[str, Any]:
     """Procesa el archivo Excel índice"""
     try:
         # Log
@@ -200,7 +200,7 @@ def _process_excel(job: Job, db) -> Dict[str, Any]:
 
 def _process_record(
     job: Job,
-    record_data: Dict[str, Any],
+    record_data: dict[str, Any],
     excel_row_number: int,
     dw_client: DocuWareClient,
     db,
@@ -292,7 +292,7 @@ def _process_record(
 
 
 def _download_documents(
-    documents: list, job: Job, record_data: Dict, dw_client: DocuWareClient, db
+    documents: list, job: Job, record_data: dict, dw_client: DocuWareClient, db
 ) -> list:
     """Descarga los documentos encontrados"""
 
@@ -332,7 +332,7 @@ def _download_documents(
 
 
 def _organize_files(
-    downloaded_files: list, job: Job, record_data: Dict, job_record: JobRecord
+    downloaded_files: list, job: Job, record_data: dict, job_record: JobRecord
 ):
     """Organiza los archivos descargados en carpetas"""
 

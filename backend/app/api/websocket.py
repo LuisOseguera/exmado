@@ -3,12 +3,12 @@ WebSocket para actualizaciones de progreso en tiempo real.
 Permite al frontend recibir updates mientras se procesa un job.
 """
 
-from typing import Dict, Set
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from sqlalchemy.orm import Session
-from loguru import logger
-import json
 import asyncio
+import json
+
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from loguru import logger
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Job, JobStatus
@@ -24,7 +24,7 @@ class ConnectionManager:
 
     def __init__(self):
         # Diccionario: job_id -> set de WebSocket connections
-        self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.active_connections: dict[str, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, job_id: str):
         """Acepta una nueva conexión WebSocket"""

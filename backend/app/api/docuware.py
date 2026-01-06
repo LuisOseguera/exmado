@@ -3,14 +3,15 @@ Endpoints para interactuar con DocuWare.
 Permite probar conexión, listar cabinets, diálogos y campos.
 """
 
-from typing import Dict, Any
+from typing import Any
+
+import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
-import requests
 
-from app.services import DocuWareClient
 from app.api.deps import get_docuware_client
 from app.config import settings
+from app.services import DocuWareClient
 
 router = APIRouter()
 
@@ -38,7 +39,7 @@ def test_connection(client: DocuWareClient = Depends(get_docuware_client)):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Error de conexión: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/cabinets")
@@ -84,7 +85,7 @@ def list_file_cabinets(client: DocuWareClient = Depends(get_docuware_client)):
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"DocuWare retornó JSON inválido: {str(e)}",
-            )
+            ) from e
 
         # DocuWare puede retornar la lista con diferentes keys
         cabinets_raw = data.get("FileCabinet", data.get("fileCabinet", []))
@@ -121,13 +122,13 @@ def list_file_cabinets(client: DocuWareClient = Depends(get_docuware_client)):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"No se pudo conectar con DocuWare: {str(e)}",
-        )
+        ) from e
     except Exception as e:
         logger.error(f"✗ Error inesperado al listar cabinets: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar cabinets: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/cabinets/{cabinet_id}/dialogs")
@@ -183,7 +184,7 @@ def list_search_dialogs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar diálogos: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/cabinets/{cabinet_id}/fields")
@@ -287,14 +288,14 @@ def list_cabinet_fields(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar campos: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/search")
 def search_documents(
     cabinet_id: str,
     dialog_id: str,
-    search_params: Dict[str, Any],
+    search_params: dict[str, Any],
     client: DocuWareClient = Depends(get_docuware_client),
 ):
     """
@@ -355,7 +356,7 @@ def search_documents(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error en búsqueda: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/documents/{cabinet_id}/{document_id}")
@@ -392,7 +393,7 @@ def get_document_info(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener documento: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/documents/{cabinet_id}/{document_id}/links")
@@ -424,7 +425,7 @@ def get_document_links(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener links: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/config")

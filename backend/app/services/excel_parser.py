@@ -3,9 +3,10 @@ Servicio para parsear archivos Excel índice.
 Lee y valida la estructura de los archivos Excel que suben los usuarios.
 """
 
-import pandas as pd
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
+
+import pandas as pd
 from loguru import logger
 
 
@@ -15,9 +16,9 @@ class ExcelParser:
     @staticmethod
     def read_excel(
         file_path: str,
-        sheet_name: Optional[str] = None,
-        sheet_index: Optional[int] = None,
-    ) -> Optional[pd.DataFrame]:
+        sheet_name: str | None = None,
+        sheet_index: int | None = None,
+    ) -> pd.DataFrame | None:
         """
         Lee un archivo Excel y retorna un DataFrame.
 
@@ -36,7 +37,7 @@ class ExcelParser:
                 logger.error(f"✗ Archivo no existe: {file_path}")
                 return None
 
-            if not file_path_obj.suffix.lower() in [".xlsx", ".xls"]:
+            if file_path_obj.suffix.lower() not in [".xlsx", ".xls"]:
                 logger.error(f"✗ Archivo no es Excel: {file_path}")
                 return None
 
@@ -57,8 +58,8 @@ class ExcelParser:
 
     @staticmethod
     def validate_columns(
-        df: pd.DataFrame, required_columns: List[str], case_sensitive: bool = False
-    ) -> Tuple[bool, List[str]]:
+        df: pd.DataFrame, required_columns: list[str], case_sensitive: bool = False
+    ) -> tuple[bool, list[str]]:
         """
         Valida que el DataFrame tenga las columnas requeridas.
 
@@ -82,7 +83,7 @@ class ExcelParser:
             logger.warning(f"⚠ Columnas faltantes: {missing_columns}")
             return False, missing_columns
 
-        logger.info(f"✓ Todas las columnas requeridas están presentes")
+        logger.info("✓ Todas las columnas requeridas están presentes")
         return True, []
 
     @staticmethod
@@ -113,7 +114,7 @@ class ExcelParser:
 
     @staticmethod
     def filter_header_rows(
-        df: pd.DataFrame, header_keywords: List[str] = None
+        df: pd.DataFrame, header_keywords: list[str] = None
     ) -> pd.DataFrame:
         """
         Filtra filas que parecen ser encabezados.
@@ -160,7 +161,7 @@ class ExcelParser:
         return df.reset_index(drop=True)
 
     @staticmethod
-    def to_dict_records(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def to_dict_records(df: pd.DataFrame) -> list[dict[str, Any]]:
         """
         Convierte un DataFrame a lista de diccionarios.
 
@@ -181,7 +182,7 @@ class ExcelParser:
     @staticmethod
     def get_column_mapping(
         df: pd.DataFrame, case_sensitive: bool = False
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Genera un mapeo de columnas (nombre original → nombre normalizado).
 
@@ -207,8 +208,8 @@ class ExcelParser:
 
     @staticmethod
     def validate_data_types(
-        df: pd.DataFrame, column_types: Dict[str, type]
-    ) -> Tuple[bool, List[str]]:
+        df: pd.DataFrame, column_types: dict[str, type]
+    ) -> tuple[bool, list[str]]:
         """
         Valida que las columnas tengan los tipos de datos esperados.
 
@@ -229,15 +230,15 @@ class ExcelParser:
 
             # Intentar convertir al tipo esperado
             try:
-                if expected_type == str:
+                if expected_type is str:
                     df[column] = df[column].astype(str)
-                elif expected_type == int:
+                elif expected_type is int:
                     df[column] = pd.to_numeric(df[column], errors="coerce")
                     if df[column].isna().any():
                         errors.append(
                             f"Columna '{column}' contiene valores no numéricos"
                         )
-                elif expected_type == float:
+                elif expected_type is float:
                     df[column] = pd.to_numeric(df[column], errors="coerce")
             except Exception as e:
                 errors.append(f"Error en columna '{column}': {str(e)}")
@@ -246,11 +247,11 @@ class ExcelParser:
             logger.warning(f"⚠ Errores de validación: {errors}")
             return False, errors
 
-        logger.info(f"✓ Tipos de datos validados correctamente")
+        logger.info("✓ Tipos de datos validados correctamente")
         return True, []
 
     @staticmethod
-    def get_preview(df: pd.DataFrame, n_rows: int = 5) -> List[Dict[str, Any]]:
+    def get_preview(df: pd.DataFrame, n_rows: int = 5) -> list[dict[str, Any]]:
         """
         Obtiene una vista previa de las primeras N filas.
 
@@ -267,11 +268,11 @@ class ExcelParser:
     @staticmethod
     def parse_and_validate(
         file_path: str,
-        required_columns: List[str] = None,
-        sheet_name: Optional[str] = None,
-        sheet_index: Optional[int] = None,
+        required_columns: list[str] = None,
+        sheet_name: str | None = None,
+        sheet_index: int | None = None,
         filter_headers: bool = True,
-    ) -> Tuple[Optional[pd.DataFrame], Dict[str, Any]]:
+    ) -> tuple[pd.DataFrame | None, dict[str, Any]]:
         """
         Método completo que parsea y valida un Excel.
 

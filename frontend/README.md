@@ -12,6 +12,7 @@ Aplicación web React + TypeScript para el sistema de descarga masiva de documen
 ### 1. Navegar al Directorio
 
 Desde la raíz del proyecto, entra a la carpeta del frontend.
+
 ```bash
 cd frontend
 ```
@@ -19,6 +20,7 @@ cd frontend
 ### 2. Instalar Dependencias
 
 Instala todas las librerías necesarias para el proyecto.
+
 ```bash
 npm install
 ```
@@ -26,16 +28,40 @@ npm install
 ### 3. Iniciar el Servidor de Desarrollo
 
 Ejecuta el siguiente comando para arrancar la aplicación en modo de desarrollo.
+
 ```bash
 npm run dev
 ```
-La aplicación estará disponible en `http://localhost:5173` y se recargará automáticamente al guardar cambios.
+
+La aplicación estará disponible en `http://localhost:3000` y se recargará automáticamente al guardar cambios.
 
 ### Producción
 
 ```bash
 npm run build
 npm run preview
+```
+
+## ✨ Calidad de Código
+
+Este proyecto utiliza **ESLint** y **Prettier** para mantener un código limpio y consistente.
+
+### Formatear el Código
+
+Para formatear automáticamente todos los archivos del proyecto, ejecuta:
+```bash
+npm run format
+```
+
+### Analizar el Código (Linting)
+
+Para encontrar posibles errores o malas prácticas en el código, ejecuta:
+```bash
+npm run lint
+```
+Para intentar corregir los problemas automáticamente:
+```bash
+npm run lint -- --fix
 ```
 
 ## 📁 Estructura
@@ -68,14 +94,14 @@ frontend/
 El frontend está en una fase de desarrollo activa. La estructura base, la comunicación con el backend y las vistas principales están implementadas.
 
 - **Completado:**
-    - Estructura del proyecto con Vite, React y TypeScript.
-    - Conexión con la API REST del backend mediante Axios y React Query.
-    - Integración con WebSockets para recibir actualizaciones en tiempo real.
-    - Dashboard principal que lista las tareas de descarga.
-    - Asistente de creación de nuevas tareas (`CreateJobWizard`).
+  - Estructura del proyecto con Vite, React y TypeScript.
+  - Conexión con la API REST del backend mediante Axios y React Query.
+  - Integración con WebSockets para recibir actualizaciones en tiempo real.
+  - Dashboard principal que lista las tareas de descarga.
+  - Asistente de creación de nuevas tareas (`CreateJobWizard`).
 - **En Desarrollo:**
-    - Vista de detalles de una tarea (`JobDetails`).
-    - Mejoras en la gestión de errores y notificaciones al usuario.
+  - Vista de detalles de una tarea (`JobDetails`).
+  - Mejoras en la gestión de errores y notificaciones al usuario.
 
 ## 🔧 Tecnologías
 
@@ -142,14 +168,12 @@ const { progress, isConnected } = useJobProgress(jobId);
 ### Componentes Pendientes
 
 1. **JobDetails Completo**
-
    - Progreso en tiempo real con barra animada
    - Lista de records procesados
    - Logs en tiempo real
    - Botones de control (pausar, cancelar, reiniciar)
 
 2. **CreateJobWizard**
-
    - Step 1: Drag & drop Excel con preview
    - Step 2: Selector de Cabinet/Dialog
    - Step 3: Mapeo visual columnas → campos
