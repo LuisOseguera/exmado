@@ -31,20 +31,33 @@ backend/
 ## Requisitos Previos
 
 - Python 3.10 o superior
-- Docker y Docker Compose (para Redis)
+- Docker y Docker Compose (para la cola de tareas con Redis)
 - Git
 
-## Instalación
+## ⚙️ Configuración
 
-### 1. Clonar el repositorio
+Toda la configuración de la aplicación se gestiona a través de variables de entorno.
 
+1.  **Crear el archivo `.env`**:
+    ```bash
+    cp .env.example .env
+    ```
+2.  **Editar `.env`**:
+    Abre el archivo `.env` y rellena las variables con tus credenciales de DocuWare y la configuración de la base de datos.
+
+## 🚀 Instalación y Ejecución
+
+### 1. Clonar el Repositorio
+
+Si aún no lo has hecho, clona el proyecto y navega al directorio del backend.
 ```bash
 git clone https://github.com/LuisOseguera/exmado.git
-cd exmado
+cd exmado/backend
 ```
 
-### 2. Crear entorno virtual
+### 2. Crear y Activar el Entorno Virtual
 
+Es una buena práctica aislar las dependencias del proyecto.
 ```bash
 python -m venv venv
 
@@ -55,95 +68,71 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 3. Instalar dependencias
+### 3. Instalar Dependencias
 
+Instala todas las librerías de Python necesarias.
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configurar variables de entorno
+### 4. Iniciar Servicios Externos
 
-```bash
-# Copiar el archivo de ejemplo
-cp .env.example .env
-
-# Editar .env con tus credenciales de DocuWare
-nano .env  # o usar tu editor favorito
-```
-
-### 5. Iniciar Redis (usando Docker)
-
+La aplicación depende de Redis para la cola de tareas. La forma más sencilla de iniciarlo es con Docker.
 ```bash
 docker-compose up -d
 ```
+Esto levantará un contenedor de Redis en segundo plano.
 
-O si no usás Docker, instalá Redis localmente:
+### 5. Ejecutar la Aplicación
 
-- **Windows**: Descargar desde https://github.com/microsoftarchive/redis/releases
-- **Linux**: `sudo apt-get install redis-server`
-- **Mac**: `brew install redis`
+Para que el sistema funcione completamente, necesitas dos procesos corriendo en terminales separadas:
 
-### 6. Iniciar la aplicación
-
+**Terminal 1: Iniciar el Servidor Web (API REST)**
 ```bash
-# Terminal 1: Iniciar Redis
-docker-compose up -d
-
-# Terminal 2: Iniciar Celery Worker
-bash start_worker.sh
-# O: celery -A app.celery_app worker --loglevel=info --pool=solo
-
-# Terminal 3: Iniciar FastAPI
 python -m app.main
 ```
+El servidor estará disponible en `http://localhost:8000`.
 
-## Verificar Instalación
-
-1. Abrí tu navegador en: http://localhost:8000
-2. Deberías ver: `{"app": "DocuWare Export Tool", "version": "1.0.0", ...}`
-3. Documentación interactiva: http://localhost:8000/docs
-
-## Desarrollo
-
-### Base de datos
-
-La base de datos SQLite se crea automáticamente al iniciar la aplicación en `./docuware_export.db`
-
-Para resetear la base de datos:
-
+**Terminal 2: Iniciar el Worker Asíncrono (Celery)**
 ```bash
-rm docuware_export.db
+bash start_worker.sh
+# O, manualmente:
+# celery -A app.celery_app worker --loglevel=info --pool=solo
 ```
+El worker es el encargado de procesar las descargas de documentos en segundo plano.
+
+## ✅ Verificación
+
+1.  **API**: Abre tu navegador en `http://localhost:8000`. Deberías ver un mensaje de bienvenida en formato JSON.
+2.  **Documentación Interactiva**: Visita `http://localhost:8000/docs` para ver la documentación de la API generada por Swagger UI, donde puedes probar los endpoints.
+
+## 🔧 Desarrollo
+
+### Base de Datos
+
+- La aplicación utiliza **SQLite** por defecto, creando un archivo `docuware_export.db` en la raíz del backend.
+- Para producción, está preparada para usar **PostgreSQL** (requiere configuración en `.env`).
+- Para resetear la base de datos, simplemente elimina el archivo `docuware_export.db`.
 
 ### Logging
 
-Los logs se guardan en:
+- Los logs de la aplicación se guardan en el directorio `logs/`.
+- También se muestran en la consola donde se ejecuta el servidor.
 
-- Archivo: `./logs/app.log`
-- Consola: salida estándar
+### Testing
 
-### Testing (cuando se implemente)
-
+Para ejecutar los tests (cuando se implementen):
 ```bash
 pytest tests/
 ```
 
-## 📝 Próximos Pasos de Desarrollo
+## 📝 Estado y Próximos Pasos
 
-### ✅ Completado
+El backend está mayormente funcional, con la lógica principal, API y tareas asíncronas implementadas.
 
-- [x] Modelos de base de datos
-- [x] Schemas de Pydantic
-- [x] Servicios de negocio
-- [x] Endpoints de API REST
-- [x] Tareas de Celery
-
-### 🚧 Pendiente
-
-- [ ] Integración completa WebSocket
-- [ ] Tests unitarios
-- [ ] Frontend (Fase 2)
-- [ ] Documentación de usuario
+- [ ] **Integración WebSocket**: Mejorar la comunicación en tiempo real.
+- [ ] **Tests Unitarios**: Aumentar la cobertura de tests para asegurar la fiabilidad.
+- [ ] **Documentación de Usuario**: Crear guías detalladas para los usuarios finales.
 
 ## Solución de Problemas
 
