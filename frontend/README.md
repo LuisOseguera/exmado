@@ -72,9 +72,9 @@ El frontend está en una fase de desarrollo activa. La estructura base, la comun
     - Conexión con la API REST del backend mediante Axios y React Query.
     - Integración con WebSockets para recibir actualizaciones en tiempo real.
     - Dashboard principal que lista las tareas de descarga.
+    - Asistente de creación de nuevas tareas (`CreateJobWizard`).
 - **En Desarrollo:**
     - Vista de detalles de una tarea (`JobDetails`).
-    - Asistente de creación de nuevas tareas (`CreateJobWizard`).
     - Mejoras en la gestión de errores y notificaciones al usuario.
 
 ## 🔧 Tecnologías

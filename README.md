@@ -118,7 +118,8 @@ Este es un proyecto interno. Para sugerencias o reportar problemas:
 - **Frontend (React):**
     - [x] Estructura base y componentes principales listos.
     - [x] Conexión con API y WebSockets funcional.
-    - [ ] Pendiente: Desarrollo de vistas de detalle y wizard de creación.
+    - [x] Asistente de creación de nuevas tareas (CreateJobWizard).
+    - [ ] Pendiente: Desarrollo de vistas de detalle.
 
 ## ⚠️ Notas de Seguridad
 
