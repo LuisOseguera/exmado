@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
 from app.config import settings
 
 # Motor de base de datos
@@ -41,6 +42,5 @@ def init_db():
     Inicializa la base de datos creando todas las tablas.
     Llamar esto al iniciar la aplicación.
     """
-    from app.models import job, job_record, job_log  # Importar todos los modelos
 
     Base.metadata.create_all(bind=engine)

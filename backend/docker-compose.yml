@@ -3,18 +3,48 @@ version: "3.8"
 services:
   redis:
     image: redis:7-alpine
-    container_name: docuware_redis
+    container_name: exmado_redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  api:
+    build: .
+    container_name: exmado_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  worker:
+    build: .
+    container_name: exmado_worker
+    command: celery -A app.celery_app worker --loglevel=info --pool=solo
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    restart: always
 
 volumes:
   redis_data:

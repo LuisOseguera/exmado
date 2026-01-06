@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 import type {
   Job,
   JobListResponse,
@@ -10,13 +10,16 @@ import type {
   DocuWareCabinet,
   DocuWareDialog,
   DocuWareField,
-} from "@/types";
+  UploadedFile,
+  DocuWareDocument,
+} from '@/types';
+import SnackbarUtils from '@/utils/snackbar';
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: '/api',
   timeout: 30000,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
@@ -24,7 +27,11 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Error:", error);
+    const message =
+      error.response?.data?.detail ||
+      error.message ||
+      'Ocurrió un error inesperado.';
+    SnackbarUtils.error(message);
     return Promise.reject(error);
   }
 );
@@ -39,7 +46,7 @@ export const jobsApi = {
     status_filter?: string;
     user_filter?: string;
   }): Promise<JobListResponse> => {
-    const { data } = await api.get<JobListResponse>("/jobs", { params });
+    const { data } = await api.get<JobListResponse>('/jobs', { params });
     return data;
   },
 
@@ -51,7 +58,7 @@ export const jobsApi = {
 
   // Crear job
   create: async (jobData: CreateJobRequest): Promise<Job> => {
-    const { data } = await api.post<Job>("/jobs", jobData);
+    const { data } = await api.post<Job>('/jobs', jobData);
     return data;
   },
 
@@ -114,24 +121,24 @@ export const excelApi = {
     sheetIndex?: number
   ): Promise<ExcelValidation> => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('file', file);
 
     if (requiredColumns && requiredColumns.length > 0) {
-      formData.append("required_columns", requiredColumns.join(","));
+      formData.append('required_columns', requiredColumns.join(','));
     }
     if (sheetName) {
-      formData.append("sheet_name", sheetName);
+      formData.append('sheet_name', sheetName);
     }
     if (sheetIndex !== undefined) {
-      formData.append("sheet_index", sheetIndex.toString());
+      formData.append('sheet_index', sheetIndex.toString());
     }
 
     const { data } = await api.post<ExcelValidation>(
-      "/excel/upload",
+      '/excel/upload',
       formData,
       {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
         },
       }
     );
@@ -139,8 +146,10 @@ export const excelApi = {
   },
 
   // Listar archivos subidos
-  listUploads: async (): Promise<{ files: any[] }> => {
-    const { data } = await api.get<{ files: any[] }>("/excel/list-uploads");
+  listUploads: async (): Promise<{ files: UploadedFile[] }> => {
+    const { data } = await api.get<{ files: UploadedFile[] }>(
+      '/excel/list-uploads'
+    );
     return data;
   },
 
@@ -164,7 +173,7 @@ export const excelApi = {
     filename: string;
     total_rows: number;
     columns: string[];
-    preview: Record<string, any>[];
+    preview: Record<string, unknown>[];
   }> => {
     const { data } = await api.get(`/excel/preview/${filename}`, { params });
     return data;
@@ -186,7 +195,7 @@ export const docuwareApi = {
     server_url: string;
     username: string;
   }> => {
-    const { data } = await api.get("/docuware/test-connection");
+    const { data } = await api.get('/docuware/test-connection');
     return data;
   },
 
@@ -197,7 +206,7 @@ export const docuwareApi = {
     timeout: number;
     configured: boolean;
   }> => {
-    const { data } = await api.get("/docuware/config");
+    const { data } = await api.get('/docuware/config');
     return data;
   },
 
@@ -206,7 +215,7 @@ export const docuwareApi = {
     cabinets: DocuWareCabinet[];
     total: number;
   }> => {
-    const { data } = await api.get("/docuware/cabinets");
+    const { data } = await api.get('/docuware/cabinets');
     return data;
   },
 
@@ -230,9 +239,9 @@ export const docuwareApi = {
   search: async (
     cabinetId: string,
     dialogId: string,
-    searchParams: Record<string, any>
-  ): Promise<{ documents: any[]; total: number }> => {
-    const { data } = await api.post("/docuware/search", {
+    searchParams: Record<string, unknown>
+  ): Promise<{ documents: DocuWareDocument[]; total: number }> => {
+    const { data } = await api.post('/docuware/search', {
       cabinet_id: cabinetId,
       dialog_id: dialogId,
       search_params: searchParams,

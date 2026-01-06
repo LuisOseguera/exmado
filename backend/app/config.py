@@ -1,6 +1,8 @@
-from pydantic_settings import BaseSettings
-from typing import Optional
 from pathlib import Path
+from typing import Any
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -21,13 +23,33 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    CELERY_BROKER_URL: str | None = None
+    CELERY_RESULT_BACKEND: str | None = None
+
+    @model_validator(mode="before")
+    def assemble_celery_urls(cls, values: Any) -> Any:
+        """
+        Construye las URLs de Celery a partir de la configuración de Redis.
+        """
+        redis_host = values.get("REDIS_HOST", "localhost")
+        redis_port = values.get("REDIS_PORT", 6379)
+        redis_db = values.get("REDIS_DB", 0)
+        redis_url = f"redis://{redis_host}:{redis_port}/{redis_db}"
+
+        if "CELERY_BROKER_URL" not in values or values["CELERY_BROKER_URL"] is None:
+            values["CELERY_BROKER_URL"] = redis_url
+        if (
+            "CELERY_RESULT_BACKEND" not in values
+            or values["CELERY_RESULT_BACKEND"] is None
+        ):
+            values["CELERY_RESULT_BACKEND"] = redis_url
+
+        return values
 
     # DocuWare API
     DOCUWARE_URL: str = ""  # e.g., "https://company.docuware.cloud"
-    DOCUWARE_USERNAME: Optional[str] = None
-    DOCUWARE_PASSWORD: Optional[str] = None
+    DOCUWARE_USERNAME: str | None = None
+    DOCUWARE_PASSWORD: str | None = None
     DOCUWARE_TIMEOUT: int = 30  # segundos
 
     # Archivos

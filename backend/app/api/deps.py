@@ -2,8 +2,9 @@
 Dependencies comunes para los endpoints de la API.
 """
 
-from typing import Generator
-from fastapi import Depends, HTTPException, status
+from collections.abc import Generator
+
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db

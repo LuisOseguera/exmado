@@ -2,22 +2,22 @@
 Endpoints para gestión de Jobs (trabajos de descarga).
 """
 
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from loguru import logger
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from loguru import logger
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user
 from app.database import get_db
-from app.models import Job, JobRecord, JobLog, JobStatus
+from app.models import Job, JobLog, JobRecord, JobStatus
 from app.schemas import (
     JobCreate,
-    JobUpdate,
-    JobResponse,
     JobListResponse,
-    JobRecordResponse,
     JobLogsResponse,
+    JobRecordResponse,
+    JobResponse,
+    JobUpdate,
 )
-from app.api.deps import get_current_user
 
 router = APIRouter()
 
@@ -73,15 +73,15 @@ def create_job(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al crear job: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("", response_model=JobListResponse)
 def list_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    status_filter: Optional[JobStatus] = None,
-    user_filter: Optional[str] = None,
+    status_filter: JobStatus | None = None,
+    user_filter: str | None = None,
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),
 ):
@@ -126,7 +126,7 @@ def list_jobs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar jobs: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -196,7 +196,7 @@ def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(get_db)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al actualizar job: {str(e)}",
-        )
+        ) from e
 
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -231,13 +231,13 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar job: {str(e)}",
-        )
+        ) from e
 
 
-@router.get("/{job_id}/records", response_model=List[JobRecordResponse])
+@router.get("/{job_id}/records", response_model=list[JobRecordResponse])
 def get_job_records(
     job_id: str,
-    status_filter: Optional[str] = None,
+    status_filter: str | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
@@ -267,7 +267,7 @@ def get_job_records(
 @router.get("/{job_id}/logs", response_model=JobLogsResponse)
 def get_job_logs(
     job_id: str,
-    level_filter: Optional[str] = None,
+    level_filter: str | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
@@ -338,4 +338,4 @@ def start_job(job_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al iniciar job: {str(e)}",
-        )
+        ) from e

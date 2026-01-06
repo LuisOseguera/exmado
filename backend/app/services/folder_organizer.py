@@ -5,8 +5,10 @@ Crea carpetas dinámicas basadas en datos del Excel.
 
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from loguru import logger
+
 from app.services.file_transformer import FileTransformer
 
 
@@ -24,7 +26,7 @@ class FolderOrganizer:
         self.base_output_dir.mkdir(parents=True, exist_ok=True)
 
     def build_folder_path(
-        self, folder_structure: List[str], record_data: Dict[str, Any]
+        self, folder_structure: list[str], record_data: dict[str, Any]
     ) -> Path:
         """
         Construye la ruta de carpeta basándose en la estructura definida.
@@ -79,11 +81,11 @@ class FolderOrganizer:
     def organize_file(
         self,
         source_file: str,
-        folder_structure: List[str],
-        record_data: Dict[str, Any],
-        rename_pattern: Optional[str] = None,
+        folder_structure: list[str],
+        record_data: dict[str, Any],
+        rename_pattern: str | None = None,
         copy_instead_of_move: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Organiza un archivo en la estructura de carpetas.
 
@@ -154,11 +156,11 @@ class FolderOrganizer:
 
     def organize_multiple_files(
         self,
-        files: List[str],
-        folder_structure: List[str],
-        record_data: Dict[str, Any],
-        rename_pattern: Optional[str] = None,
-    ) -> List[str]:
+        files: list[str],
+        folder_structure: list[str],
+        record_data: dict[str, Any],
+        rename_pattern: str | None = None,
+    ) -> list[str]:
         """
         Organiza múltiples archivos en la misma estructura.
 
@@ -213,7 +215,7 @@ class FolderOrganizer:
             # Si no es relativo al base_dir, retornar absoluto
             return absolute_path
 
-    def get_folder_size(self, folder_path: Optional[Path] = None) -> int:
+    def get_folder_size(self, folder_path: Path | None = None) -> int:
         """
         Calcula el tamaño total de una carpeta en bytes.
 
@@ -229,7 +231,7 @@ class FolderOrganizer:
         total_size = 0
 
         try:
-            for dirpath, dirnames, filenames in os.walk(folder_path):
+            for dirpath, _dirnames, filenames in os.walk(folder_path):
                 for filename in filenames:
                     file_path = Path(dirpath) / filename
                     if file_path.exists():
@@ -255,7 +257,7 @@ class FolderOrganizer:
             size_bytes /= 1024.0
         return f"{size_bytes:.2f} PB"
 
-    def list_created_folders(self) -> List[str]:
+    def list_created_folders(self) -> list[str]:
         """
         Lista todas las carpetas creadas dentro del directorio base.
 
@@ -265,7 +267,7 @@ class FolderOrganizer:
         folders = []
 
         try:
-            for root, dirs, files in os.walk(self.base_output_dir):
+            for root, _dirs, _files in os.walk(self.base_output_dir):
                 root_path = Path(root)
                 if root_path != self.base_output_dir:
                     rel_path = self.get_relative_path(str(root_path))
@@ -275,7 +277,7 @@ class FolderOrganizer:
 
         return folders
 
-    def count_files_in_folder(self, folder_path: Optional[Path] = None) -> int:
+    def count_files_in_folder(self, folder_path: Path | None = None) -> int:
         """
         Cuenta los archivos en una carpeta (recursivamente).
 
@@ -291,7 +293,7 @@ class FolderOrganizer:
         count = 0
 
         try:
-            for root, dirs, files in os.walk(folder_path):
+            for _root, _dirs, files in os.walk(folder_path):
                 count += len(files)
         except Exception as e:
             logger.error(f"✗ Error al contar archivos: {str(e)}")

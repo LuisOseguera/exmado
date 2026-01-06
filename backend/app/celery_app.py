@@ -3,6 +3,7 @@ Configuración de Celery para procesamiento asíncrono.
 """
 
 from celery import Celery
+
 from app.config import settings
 
 # Crear aplicación Celery

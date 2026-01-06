@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -8,16 +8,16 @@ import {
   Button,
   Tabs,
   Tab,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   List as ListIcon,
   History as HistoryIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
-import JobsList from "../components/JobsList";
-import CreateJobWizard from "../components/CreateJobWizard";
-import JobDetails from "../components/JobDetails";
+import JobsList from '../components/JobsList';
+import CreateJobWizard from '../components/CreateJobWizard';
+import JobDetails from '../components/JobDetails';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -74,9 +74,9 @@ export default function Dashboard() {
       <Box
         sx={{
           mb: 4,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         <Box>
@@ -101,8 +101,8 @@ export default function Dashboard() {
       <Grid container spacing={3}>
         {/* Left Panel - Lista de Jobs */}
         <Grid item xs={12} md={selectedJobId ? 4 : 12}>
-          <Paper sx={{ height: "100%" }}>
-            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Paper sx={{ height: '100%' }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={activeTab} onChange={handleTabChange}>
                 <Tab icon={<ListIcon />} label="Activos" iconPosition="start" />
                 <Tab
@@ -115,7 +115,7 @@ export default function Dashboard() {
 
             <TabPanel value={activeTab} index={0}>
               <JobsList
-                statusFilter={["pending", "running", "validating", "paused"]}
+                statusFilter={['pending', 'running', 'validating', 'paused']}
                 onJobSelect={handleJobSelect}
                 selectedJobId={selectedJobId}
               />
@@ -124,10 +124,10 @@ export default function Dashboard() {
             <TabPanel value={activeTab} index={1}>
               <JobsList
                 statusFilter={[
-                  "completed",
-                  "completed_with_errors",
-                  "failed",
-                  "cancelled",
+                  'completed',
+                  'completed_with_errors',
+                  'failed',
+                  'cancelled',
                 ]}
                 onJobSelect={handleJobSelect}
                 selectedJobId={selectedJobId}

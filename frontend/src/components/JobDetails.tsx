@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from 'react';
 import {
   Paper,
   Box,
@@ -22,7 +21,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Close as CloseIcon,
   PlayArrow as StartIcon,
@@ -33,14 +32,19 @@ import {
   Info as InfoIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
-} from "@mui/icons-material";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { useSnackbar } from "notistack";
+} from '@mui/icons-material';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useSnackbar } from 'notistack';
 
-import { jobsApi } from "../services/api";
-import { useJobProgress } from "../hooks/useJobProgress";
-import { Job, JobStatus, JobLog, LogLevel } from "../types";
+import { useJobProgress } from '../hooks/useJobProgress';
+import {
+  useJobDetails,
+  useJobLogs,
+  useStartJobMutation,
+  useUpdateJobMutation,
+} from '../hooks/api/jobs';
+import { JobStatus, JobLog, LogLevel } from '../types';
 
 interface JobDetailsProps {
   jobId: string;
@@ -65,62 +69,17 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
-    action: "pause" | "cancel" | null;
+    action: 'pause' | 'cancel' | null;
   }>({ open: false, action: null });
 
-  const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
-  // Query para obtener datos del job
-  const { data: job, isLoading } = useQuery<Job>({
-    queryKey: ["job", jobId],
-    queryFn: () => jobsApi.get(jobId),
-    refetchInterval: 3000, // Refrescar cada 3 segundos
-  });
-
-  // Query para logs
-  const { data: logsData } = useQuery({
-    queryKey: ["job-logs", jobId],
-    queryFn: () => jobsApi.getLogs(jobId, { limit: 100 }),
-    refetchInterval: 5000,
-  });
-
-  // WebSocket para progreso en tiempo real
+  const { data: job, isLoading } = useJobDetails(jobId);
+  const { data: logsData } = useJobLogs(jobId);
   const { progress, isConnected } = useJobProgress(jobId);
 
-  // Mutations
-  const startMutation = useMutation({
-    mutationFn: () => jobsApi.start(jobId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
-      enqueueSnackbar("Job iniciado exitosamente", { variant: "success" });
-    },
-    onError: (error: any) => {
-      enqueueSnackbar(
-        `Error: ${error.response?.data?.detail || error.message}`,
-        {
-          variant: "error",
-        }
-      );
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (status: JobStatus) => jobsApi.update(jobId, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
-      enqueueSnackbar("Job actualizado", { variant: "success" });
-      setConfirmDialog({ open: false, action: null });
-    },
-    onError: (error: any) => {
-      enqueueSnackbar(
-        `Error: ${error.response?.data?.detail || error.message}`,
-        {
-          variant: "error",
-        }
-      );
-    },
-  });
+  const startMutation = useStartJobMutation();
+  const updateMutation = useUpdateJobMutation();
 
   if (isLoading || !job) {
     return (
@@ -139,34 +98,44 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
     JobStatus.CANCELLED,
   ].includes(job.status);
 
-  const handleAction = (action: "start" | "pause" | "cancel") => {
-    if (action === "start") {
-      startMutation.mutate();
-    } else if (action === "pause") {
-      setConfirmDialog({ open: true, action: "pause" });
-    } else if (action === "cancel") {
-      setConfirmDialog({ open: true, action: "cancel" });
+  const handleAction = (action: 'start' | 'pause' | 'cancel') => {
+    if (action === 'start') {
+      startMutation.mutate(jobId, {
+        onSuccess: () =>
+          enqueueSnackbar('Job iniciado exitosamente', { variant: 'success' }),
+      });
+    } else {
+      setConfirmDialog({ open: true, action });
     }
   };
 
   const handleConfirmAction = () => {
-    if (confirmDialog.action === "pause") {
-      updateMutation.mutate(JobStatus.PAUSED);
-    } else if (confirmDialog.action === "cancel") {
-      updateMutation.mutate(JobStatus.CANCELLED);
+    const action = confirmDialog.action;
+    if (action) {
+      const newStatus =
+        action === 'pause' ? JobStatus.PAUSED : JobStatus.CANCELLED;
+      updateMutation.mutate(
+        { jobId, status: newStatus },
+        {
+          onSuccess: () => {
+            enqueueSnackbar('Job actualizado', { variant: 'success' });
+            setConfirmDialog({ open: false, action: null });
+          },
+        }
+      );
     }
   };
 
   return (
     <>
-      <Paper sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <Box
           sx={{
             p: 2,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
           <Box sx={{ flex: 1 }}>
@@ -177,7 +146,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
               ID: {job.id}
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             {isConnected && (
               <Chip
                 label="En vivo"
@@ -198,10 +167,10 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
         {isRunning && (
           <Box sx={{ p: 2 }}>
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
             >
               <Typography variant="body2">
-                {progress?.current_action || "Procesando..."}
+                {progress?.current_action || 'Procesando...'}
               </Typography>
               <Typography variant="body2" color="primary">
                 {job.progress_percentage.toFixed(1)}%
@@ -222,12 +191,12 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
         )}
 
         {/* Action Buttons */}
-        <Box sx={{ px: 2, pb: 2, display: "flex", gap: 1 }}>
+        <Box sx={{ px: 2, pb: 2, display: 'flex', gap: 1 }}>
           {isPending && (
             <Button
               variant="contained"
               startIcon={<StartIcon />}
-              onClick={() => handleAction("start")}
+              onClick={() => handleAction('start')}
               disabled={startMutation.isPending}
             >
               Iniciar
@@ -238,7 +207,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
               <Button
                 variant="outlined"
                 startIcon={<PauseIcon />}
-                onClick={() => handleAction("pause")}
+                onClick={() => handleAction('pause')}
                 disabled={updateMutation.isPending}
               >
                 Pausar
@@ -247,7 +216,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                 variant="outlined"
                 color="error"
                 startIcon={<StopIcon />}
-                onClick={() => handleAction("cancel")}
+                onClick={() => handleAction('cancel')}
                 disabled={updateMutation.isPending}
               >
                 Cancelar
@@ -264,7 +233,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
         <Divider />
 
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
             <Tab label="Resumen" />
             <Tab label="Logs" />
@@ -273,7 +242,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
         </Box>
 
         {/* Tab Content */}
-        <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
           {/* Resumen */}
           <TabPanel value={activeTab} index={0}>
             <Grid container spacing={2}>
@@ -309,7 +278,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ bgcolor: "success.light" }}>
+                <Card sx={{ bgcolor: 'success.light' }}>
                   <CardContent>
                     <Typography
                       color="success.contrastText"
@@ -327,15 +296,15 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
               <Grid item xs={12} sm={6} md={3}>
                 <Card
                   sx={{
-                    bgcolor: job.failed_records > 0 ? "error.light" : undefined,
+                    bgcolor: job.failed_records > 0 ? 'error.light' : undefined,
                   }}
                 >
                   <CardContent>
                     <Typography
                       color={
                         job.failed_records > 0
-                          ? "error.contrastText"
-                          : "text.secondary"
+                          ? 'error.contrastText'
+                          : 'text.secondary'
                       }
                       gutterBottom
                       variant="body2"
@@ -346,8 +315,8 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                       variant="h4"
                       color={
                         job.failed_records > 0
-                          ? "error.contrastText"
-                          : "inherit"
+                          ? 'error.contrastText'
+                          : 'inherit'
                       }
                     >
                       {job.failed_records}
@@ -381,7 +350,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                           Creado
                         </Typography>
                         <Typography variant="body1">
-                          {format(new Date(job.created_at), "PPpp", {
+                          {format(new Date(job.created_at), 'PPpp', {
                             locale: es,
                           })}
                         </Typography>
@@ -392,7 +361,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                             Iniciado
                           </Typography>
                           <Typography variant="body1">
-                            {format(new Date(job.started_at), "PPpp", {
+                            {format(new Date(job.started_at), 'PPpp', {
                               locale: es,
                             })}
                           </Typography>
@@ -404,7 +373,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                             Completado
                           </Typography>
                           <Typography variant="body1">
-                            {format(new Date(job.completed_at), "PPpp", {
+                            {format(new Date(job.completed_at), 'PPpp', {
                               locale: es,
                             })}
                           </Typography>
@@ -416,7 +385,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                         </Typography>
                         <Typography
                           variant="body2"
-                          sx={{ fontFamily: "monospace" }}
+                          sx={{ fontFamily: 'monospace' }}
                         >
                           {job.output_directory}
                         </Typography>
@@ -439,7 +408,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
 
           {/* Logs */}
           <TabPanel value={activeTab} index={1}>
-            <List sx={{ bgcolor: "background.paper" }}>
+            <List sx={{ bgcolor: 'background.paper' }}>
               {logsData?.logs.map((log: JobLog) => {
                 const logIcon =
                   log.level === LogLevel.ERROR ? (
@@ -453,12 +422,12 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                 return (
                   <ListItem
                     key={log.id}
-                    sx={{ borderLeft: 3, borderColor: "divider", mb: 1 }}
+                    sx={{ borderLeft: 3, borderColor: 'divider', mb: 1 }}
                   >
                     <ListItemText
                       primary={
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                         >
                           {logIcon}
                           <Typography variant="body2">{log.message}</Typography>
@@ -466,7 +435,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                       }
                       secondary={
                         <Typography variant="caption" color="text.secondary">
-                          {format(new Date(log.timestamp), "PPpp", {
+                          {format(new Date(log.timestamp), 'PPpp', {
                             locale: es,
                           })}
                           {log.excel_row_number &&
@@ -487,7 +456,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
                 <Typography variant="h6" gutterBottom>
                   Configuración del Job
                 </Typography>
-                <pre style={{ overflow: "auto", fontSize: "0.875rem" }}>
+                <pre style={{ overflow: 'auto', fontSize: '0.875rem' }}>
                   {JSON.stringify(job.config, null, 2)}
                 </pre>
               </CardContent>
@@ -504,9 +473,9 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
         <DialogTitle>Confirmar Acción</DialogTitle>
         <DialogContent>
           <Typography>
-            {confirmDialog.action === "pause"
-              ? "¿Estás seguro de que deseas pausar este job?"
-              : "¿Estás seguro de que deseas cancelar este job? Esta acción no se puede deshacer."}
+            {confirmDialog.action === 'pause'
+              ? '¿Estás seguro de que deseas pausar este job?'
+              : '¿Estás seguro de que deseas cancelar este job? Esta acción no se puede deshacer.'}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -517,7 +486,7 @@ export default function JobDetails({ jobId, onClose }: JobDetailsProps) {
           </Button>
           <Button
             onClick={handleConfirmAction}
-            color={confirmDialog.action === "cancel" ? "error" : "primary"}
+            color={confirmDialog.action === 'cancel' ? 'error' : 'primary'}
             variant="contained"
             disabled={updateMutation.isPending}
           >
