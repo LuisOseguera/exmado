@@ -15,7 +15,7 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-from app.celery_app import celery_app
+from app.celery_app import celery_app  # noqa: E402
 
 if __name__ == "__main__":
     # Iniciar worker

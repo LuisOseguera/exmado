@@ -1,15 +1,15 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import logging
 from loguru import logger
 
-from app.config import settings, ensure_directories
-from app.database import init_db
-
 # Importar routers
-from app.api import jobs, excel, docuware, websocket
+from app.api import docuware, excel, jobs, websocket
+from app.config import ensure_directories, settings
+from app.database import init_db
 
 
 @asynccontextmanager

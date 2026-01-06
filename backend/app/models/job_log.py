@@ -1,16 +1,20 @@
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Text,
-    Enum as SQLEnum,
-    ForeignKey,
-    Integer,
-)
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import enum
 import uuid
+from datetime import datetime
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
+)
+from sqlalchemy.orm import relationship
+
 from app.database import Base
 
 

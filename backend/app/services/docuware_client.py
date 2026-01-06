@@ -3,9 +3,11 @@ Cliente para interactuar con la API de DocuWare.
 Adaptado del código existente en docuware-documents-bulk-export.
 """
 
+from typing import Any
+
 import requests
-from typing import Optional, Dict, List, Any
 from loguru import logger
+
 from app.config import settings
 
 
@@ -17,7 +19,7 @@ class DocuWareClient:
         self.username = settings.DOCUWARE_USERNAME
         self.password = settings.DOCUWARE_PASSWORD
         self.timeout = settings.DOCUWARE_TIMEOUT
-        self.session: Optional[requests.Session] = None
+        self.session: requests.Session | None = None
         self._authenticated = False
 
     def authenticate(self) -> bool:
@@ -86,9 +88,9 @@ class DocuWareClient:
         self,
         cabinet_id: str,
         dialog_id: str,
-        search_params: Dict[str, Any],
+        search_params: dict[str, Any],
         operation: str = "And",
-    ) -> Optional[List[Dict[str, Any]]]:
+    ) -> list[dict[str, Any]] | None:
         """
         Busca documentos en DocuWare usando un diálogo de búsqueda.
 
@@ -151,7 +153,7 @@ class DocuWareClient:
 
     def get_document_info(
         self, document_id: str, cabinet_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Obtiene información detallada de un documento.
 
@@ -189,7 +191,7 @@ class DocuWareClient:
         cabinet_id: str,
         section_id: str = "1",
         save_path: str = None,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """
         Descarga una sección (archivo) de un documento.
 
@@ -235,7 +237,7 @@ class DocuWareClient:
 
     def get_document_links(
         self, document_id: str, cabinet_id: str
-    ) -> Optional[List[Dict[str, Any]]]:
+    ) -> list[dict[str, Any]] | None:
         """
         Obtiene documentos vinculados (DocumentLinks).
 
