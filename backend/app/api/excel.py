@@ -2,16 +2,16 @@
 Endpoints para subir y validar archivos Excel.
 """
 
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from loguru import logger
 
-from app.config import settings
-from app.services import ExcelParser
-from app.schemas import ExcelValidationResult
 from app.api.deps import get_current_user
+from app.config import settings
+from app.schemas import ExcelValidationResult
+from app.services import ExcelParser
 
 router = APIRouter()
 
@@ -19,23 +19,23 @@ router = APIRouter()
 @router.post("/upload", response_model=ExcelValidationResult)
 async def upload_excel(
     file: UploadFile = File(...),
-    required_columns: Optional[str] = Form(None),
-    sheet_name: Optional[str] = Form(None),
-    sheet_index: Optional[int] = Form(None),
+    required_columns: str | None = Form(None),
+    sheet_name: str | None = Form(None),
+    sheet_index: int | None = Form(None),
     current_user: str = Depends(get_current_user),
 ):
     """
     Sube y valida un archivo Excel.
-    
+
     **Parámetros:**
     - file: Archivo Excel a subir
     - required_columns: Columnas requeridas separadas por coma (opcional)
     - sheet_name: Nombre de la hoja a leer (opcional)
     - sheet_index: Índice de la hoja a leer (opcional)
-    
+
     **Retorna:**
     - Resultado de validación con preview de datos
-    
+
     **Ejemplo de uso con curl:**
     ```bash
     curl -X POST "http://localhost:8000/api/excel/upload" \\
@@ -105,15 +105,15 @@ async def upload_excel(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al procesar Excel: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/validate", response_model=ExcelValidationResult)
 async def validate_excel(
     file_path: str = Form(...),
-    required_columns: Optional[str] = Form(None),
-    sheet_name: Optional[str] = Form(None),
-    sheet_index: Optional[int] = Form(None),
+    required_columns: str | None = Form(None),
+    sheet_name: str | None = Form(None),
+    sheet_index: int | None = Form(None),
 ):
     """
     Valida un archivo Excel que ya existe en el servidor.
@@ -157,7 +157,7 @@ async def validate_excel(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al validar Excel: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/list-uploads")
@@ -194,7 +194,7 @@ def list_uploaded_files(current_user: str = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar archivos: {str(e)}",
-        )
+        ) from e
 
 
 @router.delete("/uploads/{filename}")
@@ -228,7 +228,7 @@ def delete_uploaded_file(filename: str, current_user: str = Depends(get_current_
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar archivo: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/sheets/{filename}")
@@ -267,14 +267,14 @@ def get_excel_sheets(filename: str, current_user: str = Depends(get_current_user
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al leer hojas del Excel: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/preview/{filename}")
 def preview_excel(
     filename: str,
-    sheet_name: Optional[str] = None,
-    sheet_index: Optional[int] = None,
+    sheet_name: str | None = None,
+    sheet_index: int | None = None,
     n_rows: int = 10,
     current_user: str = Depends(get_current_user),
 ):
@@ -325,4 +325,4 @@ def preview_excel(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener preview: {str(e)}",
-        )
+        ) from e

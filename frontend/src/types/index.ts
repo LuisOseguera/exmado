@@ -1,32 +1,32 @@
 // Enums
 export enum JobStatus {
-  PENDING = "pending",
-  VALIDATING = "validating",
-  RUNNING = "running",
-  PAUSED = "paused",
-  COMPLETED = "completed",
-  COMPLETED_WITH_ERRORS = "completed_with_errors",
-  FAILED = "failed",
-  CANCELLED = "cancelled",
+  PENDING = 'pending',
+  VALIDATING = 'validating',
+  RUNNING = 'running',
+  PAUSED = 'paused',
+  COMPLETED = 'completed',
+  COMPLETED_WITH_ERRORS = 'completed_with_errors',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
 }
 
 export enum RecordStatus {
-  PENDING = "pending",
-  SEARCHING = "searching",
-  FOUND = "found",
-  NOT_FOUND = "not_found",
-  DOWNLOADING = "downloading",
-  PROCESSING = "processing",
-  COMPLETED = "completed",
-  FAILED = "failed",
+  PENDING = 'pending',
+  SEARCHING = 'searching',
+  FOUND = 'found',
+  NOT_FOUND = 'not_found',
+  DOWNLOADING = 'downloading',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
 }
 
 export enum LogLevel {
-  DEBUG = "debug",
-  INFO = "info",
-  WARNING = "warning",
-  ERROR = "error",
-  CRITICAL = "critical",
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical',
 }
 
 // Interfaces
@@ -79,13 +79,13 @@ export interface JobRecord {
   id: string;
   job_id: string;
   excel_row_number: number;
-  excel_data: Record<string, any>;
+  excel_data: Record<string, unknown>;
   docuware_record_id: string | null;
   status: RecordStatus;
   started_at: string | null;
   completed_at: string | null;
   downloaded_files_count: number;
-  downloaded_files: any[] | null;
+  downloaded_files: string[] | null;
   output_folder_path: string | null;
   error_message: string | null;
 }
@@ -107,7 +107,7 @@ export interface ExcelValidation {
   columns: string[];
   errors: string[];
   warnings: string[];
-  preview: Record<string, any>[];
+  preview: Record<string, unknown>[];
   file_name?: string;
   file_path?: string;
   file_size?: number;
@@ -134,7 +134,7 @@ export interface DocuWareField {
 }
 
 export interface JobProgressUpdate {
-  type: "connected" | "progress" | "completed" | "error" | "heartbeat";
+  type: 'connected' | 'progress' | 'completed' | 'error' | 'heartbeat';
   job_id: string;
   status?: JobStatus;
   processed_records?: number;
@@ -169,4 +169,19 @@ export interface JobListResponse {
 export interface JobLogsResponse {
   logs: JobLog[];
   total: number;
+}
+
+// Custom types for API responses
+export interface UploadedFile {
+  filename: string;
+  full_path: string;
+  size: number;
+  modified: number;
+}
+
+export interface DocuWareDocument {
+  id: string;
+  fields: Record<string, unknown>[];
+  file_size: number;
+  content_type: string;
 }

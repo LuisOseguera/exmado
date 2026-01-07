@@ -6,7 +6,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-} from "@mui/material";
+} from '@mui/material';
 
 // JobDetails - Detalles del Job
 export function JobDetails({ jobId }: { jobId: string; onClose: () => void }) {

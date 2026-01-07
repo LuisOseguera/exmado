@@ -49,48 +49,21 @@
 **Stack Tecnológico:**
 
 - Backend: Python 3.10+, FastAPI, SQLAlchemy, Celery
-- Frontend: React, TypeScript, Material-UI _(próximamente)_
+- Frontend: React, TypeScript, Material-UI
 - Base de datos: SQLite (desarrollo) / PostgreSQL (producción)
 - Cola de tareas: Redis + Celery
 
-## 🚀 Inicio Rápido
+## 🚀 Instalación y Ejecución
 
-### Requisitos Previos
+Este proyecto se compone de un backend (API REST con Python/FastAPI) y un frontend (aplicación web con React/TypeScript). Para levantarlo completamente, necesitarás seguir las instrucciones de cada parte.
 
-- Python 3.10+
-- Docker (para Redis)
-- Acceso a DocuWare API
+- **Para instrucciones detalladas del Backend, ve a 👉 `backend/README.md`**
+- **Para instrucciones detalladas del Frontend, ve a 👉 `frontend/README.md`**
 
-### Instalación
+### Resumen Rápido
 
-```bash
-# Clonar repositorio
-git clone https://github.com/LuisOseguera/exmado.git
-cd exmado/backend
-
-# Crear entorno virtual
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# o
-venv\Scripts\activate     # Windows
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales de DocuWare
-
-# Iniciar Redis
-docker-compose up -d
-
-# Iniciar servidor
-python app/main.py
-```
-
-Acceder a: http://localhost:8000
-
-**Documentación interactiva:** http://localhost:8000/docs
+1.  **Backend**: Instalar dependencias de Python, configurar el archivo `.env`, iniciar Redis con Docker y arrancar el servidor FastAPI y el worker de Celery.
+2.  **Frontend**: Instalar dependencias de Node.js y arrancar el servidor de desarrollo de Vite.
 
 ## 📖 Casos de Uso
 
@@ -118,16 +91,11 @@ Acceder a: http://localhost:8000
 
 ```
 exmado/
-├── backend/           # API REST y lógica de negocio
-│   ├── app/
-│   │   ├── models/    # Modelos de base de datos
-│   │   ├── schemas/   # Validación de datos
-│   │   ├── api/       # Endpoints REST
-│   │   ├── services/  # Lógica de negocio
-│   │   └── tasks/     # Tareas asíncronas
-│   └── tests/
-├── frontend/          # Aplicación React (próximamente)
-└── docs/             # Documentación
+├── backend/           # API REST y lógica de negocio (FastAPI)
+│   └── ...
+├── frontend/          # Aplicación web (React + TypeScript)
+│   └── ...
+└── docs/              # Documentación general
 ```
 
 ### Contribuir
@@ -140,22 +108,31 @@ Este es un proyecto interno. Para sugerencias o reportar problemas:
 
 ## 📊 Estado del Proyecto
 
-**Fase Actual:** Desarrollo del Backend (Fase 1)
+**Fase Actual:** Desarrollo activo de Backend y Frontend.
 
-- [x] Modelos de base de datos
-- [x] Configuración y estructura base
-- [x] Sistema de schemas de validación
-- [ ] Servicios de negocio
-- [ ] Endpoints de API
-- [ ] Tareas de Celery
-- [ ] Tests unitarios
-- [ ] Frontend (Fase 2)
+- **Backend (FastAPI):**
+    - [x] Lógica de negocio principal implementada.
+    - [x] Endpoints de API funcionales.
+    - [x] Tareas asíncronas con Celery operativas.
+    - [ ] Pendiente: Mejorar cobertura de tests.
+- **Frontend (React):**
+    - [x] Estructura base y componentes principales listos.
+    - [x] Conexión con API y WebSockets funcional.
+    - [x] Asistente de creación de nuevas tareas (CreateJobWizard).
+    - [ ] Pendiente: Desarrollo de vistas de detalle.
 
 ## ⚠️ Notas de Seguridad
 
 - **NUNCA** subir archivos `.env` con credenciales reales
 - Las credenciales de DocuWare deben manejarse exclusivamente via variables de entorno
 - Para producción, usar secretos gestionados (AWS Secrets Manager, Azure Key Vault, etc.)
+
+## 💡 Implementaciones Futuras
+
+- **Migración de Base de Datos**: Cambiar de SQLite a PostgreSQL para el entorno de producción.
+- **Autenticación de Usuarios**: Implementar un sistema de login para gestionar el acceso.
+- **Tests Unitarios**: Aumentar la cobertura de tests tanto en el backend como en el frontend.
+- **Modo Oscuro**: Añadir un tema oscuro en la interfaz del frontend.
 
 ## 📝 Licencia
 

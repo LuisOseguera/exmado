@@ -6,10 +6,10 @@ Adaptado del código existente en docuware-documents-bulk-export.
 import os
 import re
 from pathlib import Path
-from typing import Optional, List
-from PIL import Image
+
 import img2pdf
 from loguru import logger
+from PIL import Image
 
 
 class FileTransformer:
@@ -44,7 +44,7 @@ class FileTransformer:
     @staticmethod
     def convert_tif_to_pdf(
         tif_path: str, delete_original: bool = True
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Convierte un archivo TIF multipágina a PDF.
 
@@ -90,7 +90,7 @@ class FileTransformer:
             # Eliminar TIF original si se solicita
             if delete_original:
                 tif_path_obj.unlink()
-                logger.debug(f"  ✓ TIF original eliminado")
+                logger.debug("  ✓ TIF original eliminado")
 
             return str(pdf_path)
 
@@ -128,7 +128,7 @@ class FileTransformer:
         return filepath.name
 
     @staticmethod
-    def rename_with_pattern(file_path: str, pattern: str, data: dict) -> Optional[str]:
+    def rename_with_pattern(file_path: str, pattern: str, data: dict) -> str | None:
         """
         Renombra un archivo usando un patrón con placeholders.
 
@@ -234,7 +234,7 @@ class FileTransformer:
         return Path(file_path).suffix.lstrip(".").lower()
 
     @staticmethod
-    def is_valid_file_type(file_path: str, allowed_types: List[str]) -> bool:
+    def is_valid_file_type(file_path: str, allowed_types: list[str]) -> bool:
         """
         Verifica si un archivo es de un tipo permitido.
 
