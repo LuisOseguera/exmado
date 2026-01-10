@@ -1,16 +1,20 @@
-# Use an official Python runtime as a parent image
+# Usar una imagen base de Python
 FROM python:3.10-slim
 
-# Set the working directory in the container
+# Establecer el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copy the requirements file into the container at /app
-COPY ./requirements.txt /app/requirements.txt
+# Instalar poetry
+RUN pip install poetry
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+# Copiar el archivo de definición de dependencias
+COPY pyproject.toml /app/
 
-# Copy the rest of the application code into the container at /app
-COPY . /app
+# Instalar dependencias (Poetry creará poetry.lock si no existe)
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root
 
-# The command to run on container startup will be defined in docker-compose.yml
+# Copiar el resto de los archivos de la aplicación
+COPY . /app/
+
+# Exponer el puerto que usa FastAPI
+EXPOSE 8000
