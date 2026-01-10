@@ -1,213 +1,51 @@
-# Éxmado Frontend
+# Frontend Éxmado
 
-Aplicación web React + TypeScript para el sistema de descarga masiva de documentos.
+## Descripción General
 
-## 🚀 Instalación y Ejecución
+Este directorio contiene el código fuente de la interfaz de usuario para el proyecto Éxmado. Es una aplicación de página única (SPA) desarrollada con **React** y **TypeScript**, diseñada para ofrecer una experiencia de usuario fluida e interactiva para la gestión de tareas de exportación de documentos.
 
-### Requisitos
+## Arquitectura y Tecnologías
 
-- Node.js (versión 18 o superior)
-- npm (generalmente se instala con Node.js)
+El frontend está construido sobre un stack moderno de tecnologías web, enfocado en la eficiencia del desarrollo y el rendimiento.
 
-### 1. Navegar al Directorio
+-   **Librería de UI**: [**React**](https://react.dev/)
+    -   Se utiliza para construir la interfaz de usuario a través de una arquitectura basada en componentes reutilizables.
+    -   Emplea **Hooks** para la gestión del estado y el ciclo de vida de los componentes.
 
-Desde la raíz del proyecto, entra a la carpeta del frontend.
+-   **Lenguaje**: [**TypeScript**](https://www.typescriptlang.org/)
+    -   Añade un sistema de tipado estático a JavaScript, lo que mejora la robustez del código, facilita el mantenimiento y previene errores comunes durante el desarrollo.
 
-```bash
-cd frontend
-```
+-   **Herramienta de Construcción**: [**Vite**](https://vitejs.dev/)
+    -   Proporciona un entorno de desarrollo extremadamente rápido con Hot Module Replacement (HMR) y optimiza el proceso de empaquetado para producción.
 
-### 2. Instalar Dependencias
+-   **Gestión de Estado del Servidor**: [**React Query (TanStack Query)**](https://tanstack.com/query/latest)
+    -   Simplifica la obtención, el almacenamiento en caché, la sincronización y la actualización del estado del servidor en la aplicación. Gestiona automáticamente las recargas en segundo plano y el estado de carga/error.
 
-Instala todas las librerías necesarias para el proyecto.
+-   **Componentes de UI**: [**Material-UI (MUI)**](https://mui.com/)
+    -   Ofrece un conjunto completo de componentes de UI personalizables y listos para usar, permitiendo construir interfaces de usuario elegantes y consistentes de manera rápida.
 
-```bash
-npm install
-```
+-   **Cliente HTTP**: [**Axios**](https://axios-http.com/)
+    -   Se utiliza para realizar peticiones a la API del backend de forma sencilla y eficiente.
 
-### 3. Iniciar el Servidor de Desarrollo
+## Estructura de Directorios
 
-Ejecuta el siguiente comando para arrancar la aplicación en modo de desarrollo.
-
-```bash
-npm run dev
-```
-
-La aplicación estará disponible en `http://localhost:3000` y se recargará automáticamente al guardar cambios.
-
-### Producción
-
-```bash
-npm run build
-npm run preview
-```
-
-## ✨ Calidad de Código
-
-Este proyecto utiliza **ESLint** y **Prettier** para mantener un código limpio y consistente.
-
-### Formatear el Código
-
-Para formatear automáticamente todos los archivos del proyecto, ejecuta:
-```bash
-npm run format
-```
-
-### Analizar el Código (Linting)
-
-Para encontrar posibles errores o malas prácticas en el código, ejecuta:
-```bash
-npm run lint
-```
-Para intentar corregir los problemas automáticamente:
-```bash
-npm run lint -- --fix
-```
-
-## 📁 Estructura
+La estructura del proyecto está organizada para separar las responsabilidades y facilitar la navegación:
 
 ```
 frontend/
-├── public/               # Archivos estáticos
-├── src/
-│   ├── components/       # Componentes React
-│   │   ├── JobsList.tsx
-│   │   └── Stubs.tsx     # Componentes temporales
-│   ├── pages/
-│   │   └── Dashboard.tsx # Página principal
-│   ├── services/
-│   │   └── api.ts        # Cliente API
-│   ├── hooks/
-│   │   └── useJobProgress.ts  # WebSocket hook
-│   ├── types/
-│   │   └── index.ts      # TypeScript types
-│   ├── App.tsx           # App principal
-│   └── main.tsx          # Entry point
-├── index.html
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
+└── src/
+    ├── api/                 # Configuración de Axios y llamadas a la API
+    ├── assets/              # Imágenes, fuentes y otros archivos estáticos
+    ├── components/          # Componentes de React reutilizables
+    ├── hooks/               # Hooks personalizados (ej. useJobProgress para WebSockets)
+    ├── types/               # Definiciones de tipos y interfaces de TypeScript
+    ├── App.tsx              # Componente principal de la aplicación
+    └── main.tsx             # Punto de entrada de la aplicación
 ```
 
-## 🎯 Estado del Proyecto
+## Comunicación con el Backend
 
-El frontend está en una fase de desarrollo activa. La estructura base, la comunicación con el backend y las vistas principales están implementadas.
+-   **API REST**: La aplicación realiza peticiones HTTP a la API del backend (FastAPI) para crear y consultar trabajos de exportación. La configuración del proxy en `vite.config.ts` redirige las llamadas `/api` al backend durante el desarrollo para evitar problemas de CORS.
+-   **WebSockets**: Se establece una conexión WebSocket con el backend para recibir actualizaciones en tiempo real sobre el progreso de los trabajos. El hook `useJobProgress` encapsula esta lógica, permitiendo que los componentes se suscriban fácilmente a las actualizaciones de un trabajo específico.
 
-- **Completado:**
-  - Estructura del proyecto con Vite, React y TypeScript.
-  - Conexión con la API REST del backend mediante Axios y React Query.
-  - Integración con WebSockets para recibir actualizaciones en tiempo real.
-  - Dashboard principal que lista las tareas de descarga.
-  - Asistente de creación de nuevas tareas (`CreateJobWizard`).
-- **En Desarrollo:**
-  - Vista de detalles de una tarea (`JobDetails`).
-  - Mejoras en la gestión de errores y notificaciones al usuario.
-
-## 🔧 Tecnologías
-
-- **React 18** - UI framework
-- **TypeScript** - Tipado estático
-- **Vite** - Build tool
-- **Material-UI (MUI)** - Componentes UI
-- **React Query** - Server state management
-- **Axios** - HTTP client
-- **React Router** - Navegación
-- **date-fns** - Manejo de fechas
-
-## 🌐 Conexión con el Backend
-
-El frontend está diseñado para comunicarse con el backend de Éxmado, que debe estar corriendo en `http://localhost:8000`.
-
-- **API REST**: Las peticiones a `/api/...` son redirigidas automáticamente al backend gracias al proxy configurado en `vite.config.ts`. Esto evita problemas de CORS durante el desarrollo.
-- **WebSockets**: Se conecta al endpoint `ws://localhost:8000/ws` para recibir actualizaciones en tiempo real sobre el progreso de las descargas.
-
-## 📊 Flujo de la Aplicación
-
-```
-1. Dashboard
-   ├─► Lista de Jobs Activos
-   │   └─► JobDetails (con progreso en tiempo real)
-   │
-   ├─► Lista de Jobs Históricos
-   │   └─► JobDetails (con logs y estadísticas)
-   │
-   └─► Botón "Nuevo Job"
-       └─► CreateJobWizard
-           ├─► Step 1: Upload Excel
-           ├─► Step 2: Seleccionar Cabinet/Dialog
-           ├─► Step 3: Mapear Campos
-           ├─► Step 4: Configurar Transformaciones
-           └─► Step 5: Ejecutar (modo prueba o completo)
-```
-
-## 🎨 Temas y Estilos
-
-El tema se configura en `App.tsx`:
-
-- Paleta de colores personalizable
-- Modo claro (dark mode pendiente)
-- Responsive design
-
-## 🔌 WebSocket
-
-El hook `useJobProgress` se conecta automáticamente al WebSocket del backend:
-
-```typescript
-const { progress, isConnected } = useJobProgress(jobId);
-
-// progress contiene:
-// - type: 'progress' | 'completed' | 'error'
-// - processed_records
-// - total_records
-// - progress_percentage
-// - latest_log
-```
-
-## 📝 Próximos Pasos
-
-### Componentes Pendientes
-
-1. **JobDetails Completo**
-   - Progreso en tiempo real con barra animada
-   - Lista de records procesados
-   - Logs en tiempo real
-   - Botones de control (pausar, cancelar, reiniciar)
-
-2. **CreateJobWizard**
-   - Step 1: Drag & drop Excel con preview
-   - Step 2: Selector de Cabinet/Dialog
-   - Step 3: Mapeo visual columnas → campos
-   - Step 4: Configuración de transformaciones
-   - Step 5: Preview y ejecución
-
-3. **Extras**
-   - Notificaciones con Snackbar
-   - Dark mode
-   - Exportar reportes
-   - Filtros avanzados
-
-## 🐛 Debugging
-
-### Problemas Comunes
-
-**Error de CORS:**
-
-- Verificar que el backend esté corriendo
-- Verificar proxy en `vite.config.ts`
-
-**WebSocket no conecta:**
-
-- Verificar URL en `useJobProgress`
-- Verificar que el endpoint `/ws/jobs/{id}` existe
-
-**Tipos TypeScript:**
-
-- Ejecutar: `npm run build` para verificar tipos
-- Actualizar tipos en `src/types/index.ts`
-
-## 📚 Referencias
-
-- [React Documentation](https://react.dev/)
-- [Material-UI](https://mui.com/)
-- [React Query](https://tanstack.com/query)
-- [Vite](https://vitejs.dev/)
+**Nota**: Este componente no se ejecuta de forma independiente. Para levantar todo el entorno de desarrollo, incluyendo el frontend, backend y los servicios asociados, por favor, siga las instrucciones detalladas en el `README.md` ubicado en la raíz del repositorio del proyecto.

@@ -1,227 +1,176 @@
 """
-WebSocket para actualizaciones de progreso en tiempo real.
-Permite al frontend recibir updates mientras se procesa un job.
-"""
+Módulo de WebSocket para Actualizaciones en Tiempo Real
 
+Este módulo se encarga de toda la comunicación en tiempo real entre el backend
+y el frontend. Permite que el frontend se suscriba a las actualizaciones de un
+trabajo específico y reciba notificaciones sobre su progreso, finalización o
+errores sin tener que estar preguntando (polling) constantemente.
+"""
 import asyncio
 import json
-
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from loguru import logger
 from sqlalchemy.orm import Session
-
 from app.database import get_db
 from app.models import Job, JobStatus
 
 router = APIRouter()
 
-
 class ConnectionManager:
     """
-    Administrador de conexiones WebSocket.
-    Mantiene un registro de todas las conexiones activas por job.
-    """
+    Administrador Central de Conexiones WebSocket.
 
+    Esta clase es como un hub central que mantiene un registro de todas las
+    conexiones de clientes activas. Asocia cada conexión a un ID de trabajo
+    específico, permitiéndonos enviar mensajes solo a los clientes que están
+    interesados en un trabajo particular.
+    """
     def __init__(self):
-        # Diccionario: job_id -> set de WebSocket connections
+        """Inicializa el manager con un diccionario para guardar las conexiones."""
         self.active_connections: dict[str, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, job_id: str):
-        """Acepta una nueva conexión WebSocket"""
+        """
+        Acepta y registra una nueva conexión WebSocket para un trabajo.
+        """
         await websocket.accept()
-
         if job_id not in self.active_connections:
             self.active_connections[job_id] = set()
-
         self.active_connections[job_id].add(websocket)
-        logger.info(f"✓ WebSocket conectado para job {job_id}")
+        logger.info(f"Nuevo cliente WebSocket conectado al trabajo: {job_id}")
 
     def disconnect(self, websocket: WebSocket, job_id: str):
-        """Desconecta un WebSocket"""
+        """
+        Elimina una conexión WebSocket del registro.
+        """
         if job_id in self.active_connections:
             self.active_connections[job_id].discard(websocket)
-
-            # Si no quedan conexiones para este job, eliminar el entry
             if not self.active_connections[job_id]:
                 del self.active_connections[job_id]
-
-        logger.info(f"✓ WebSocket desconectado para job {job_id}")
-
-    async def send_personal_message(self, message: dict, websocket: WebSocket):
-        """Envía un mensaje a un WebSocket específico"""
-        try:
-            await websocket.send_json(message)
-        except Exception as e:
-            logger.error(f"✗ Error al enviar mensaje: {str(e)}")
+        logger.info(f"Cliente WebSocket desconectado del trabajo: {job_id}")
 
     async def broadcast_to_job(self, message: dict, job_id: str):
         """
-        Envía un mensaje a todos los WebSockets conectados a un job específico.
-        Esta es la función que se llamará desde las tareas de Celery.
+        Envía un mensaje a todos los clientes suscritos a un trabajo.
+
+        Esta es la función clave que usan las tareas de Celery para notificar
+        al frontend sobre el progreso.
         """
         if job_id not in self.active_connections:
             return
 
-        # Crear lista de conexiones para evitar modificar el set durante iteración
+        # Hacemos una copia para evitar problemas si el set cambia mientras iteramos.
         connections = list(self.active_connections[job_id])
-
         for connection in connections:
             try:
                 await connection.send_json(message)
             except Exception as e:
-                logger.error(f"✗ Error al enviar broadcast: {str(e)}")
-                # Si falla, desconectar
+                logger.error(f"No se pudo enviar mensaje por broadcast al trabajo {job_id}: {e}")
                 self.disconnect(connection, job_id)
 
-
-# Instancia global del manager
+# Creamos una única instancia global del ConnectionManager para que toda la
+# aplicación la comparta.
 manager = ConnectionManager()
-
 
 @router.websocket("/jobs/{job_id}")
 async def websocket_job_progress(
     websocket: WebSocket, job_id: str, db: Session = Depends(get_db)
 ):
     """
-    WebSocket para recibir actualizaciones de progreso de un job.
+    Endpoint de WebSocket para el seguimiento del progreso de un trabajo.
 
-    **Conexión:**
-    ```javascript
-    const ws = new WebSocket('ws://localhost:8000/ws/jobs/abc-123');
-
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Progress:', data);
-    };
-    ```
-
-    **Mensajes recibidos:**
-    ```json
-    {
-        "type": "progress",
-        "job_id": "abc-123",
-        "status": "running",
-        "processed_records": 50,
-        "total_records": 100,
-        "progress_percentage": 50.0,
-        "current_action": "Descargando documento...",
-        "latest_log": "Procesando fila 50..."
-    }
-    ```
+    Cuando un cliente (el frontend) se conecta a esta ruta, se establece una
+    comunicación bidireccional. El servidor puede empujar actualizaciones del
+    trabajo, y el cliente puede enviar mensajes (como 'ping' o 'get_status').
     """
-    # Verificar que el job existe
     job = db.query(Job).filter(Job.id == job_id).first()
-
     if not job:
-        await websocket.close(code=1008, reason=f"Job {job_id} no encontrado")
+        logger.warning(f"Intento de conexión a WebSocket para un trabajo no existente: {job_id}")
+        await websocket.close(code=1008, reason=f"El trabajo {job_id} no fue encontrado.")
         return
 
-    # Conectar WebSocket
     await manager.connect(websocket, job_id)
-
     try:
-        # Enviar estado inicial
+        # Enviamos un mensaje inicial para confirmar la conexión.
         initial_message = {
-            "type": "connected",
-            "job_id": job_id,
-            "message": f"Conectado a job {job_id}",
-            "current_status": job.status.value,
+            "type": "status_update",
+            "job_id": job.id,
+            "status": job.status.value,
             "progress": {
                 "processed": job.processed_records,
                 "total": job.total_records,
                 "percentage": job.progress_percentage,
+                "successful": job.successful_records,
+                "failed": job.failed_records,
             },
         }
-        await manager.send_personal_message(initial_message, websocket)
+        await websocket.send_json(initial_message)
 
-        # Mantener la conexión abierta y enviar heartbeat
+        # Mantenemos la conexión viva, escuchando mensajes del cliente.
         while True:
             try:
-                # Esperar mensaje del cliente (o timeout cada 25 segundos)
+                # Esperamos un mensaje del cliente con un tiempo de espera.
                 data = await asyncio.wait_for(websocket.receive_text(), timeout=25.0)
+                message = json.loads(data)
 
-                # Procesar mensaje del cliente si es necesario
-                try:
-                    message = json.loads(data)
-
-                    # Manejar ping/pong
-                    if message.get("type") == "ping":
-                        await manager.send_personal_message({"type": "pong"}, websocket)
-
-                    # Manejar solicitud de estado actual
-                    elif message.get("type") == "get_status":
-                        db.refresh(job)
-                        status_message = {
-                            "type": "status_update",
-                            "job_id": job_id,
-                            "status": job.status.value,
-                            "progress": {
-                                "processed": job.processed_records,
-                                "total": job.total_records,
-                                "percentage": job.progress_percentage,
-                                "successful": job.successful_records,
-                                "failed": job.failed_records,
-                            },
-                        }
-                        await manager.send_personal_message(status_message, websocket)
-
-                except json.JSONDecodeError:
-                    logger.warning(f"⚠ Mensaje no JSON recibido: {data}")
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                elif message.get("type") == "get_status":
+                    db.refresh(job)
+                    status_message = {
+                        "type": "status_update",
+                        "job_id": job.id,
+                        "status": job.status.value,
+                        "progress": {
+                            "processed": job.processed_records,
+                            "total": job.total_records,
+                            "percentage": job.progress_percentage,
+                            "successful": job.successful_records,
+                            "failed": job.failed_records,
+                        },
+                    }
+                    await websocket.send_json(status_message)
 
             except asyncio.TimeoutError:
-                # Timeout - enviar heartbeat
-                await manager.send_personal_message({"type": "heartbeat"}, websocket)
+                # Si no recibimos nada en un tiempo, enviamos un 'heartbeat'
+                # para mantener la conexión activa y verificar que sigue viva.
+                await websocket.send_json({"type": "heartbeat"})
+            except (json.JSONDecodeError, TypeError):
+                logger.warning(f"Mensaje no válido recibido por WebSocket: {data}")
 
     except WebSocketDisconnect:
-        logger.info(f"Cliente desconectado de job {job_id}")
         manager.disconnect(websocket, job_id)
-
     except Exception as e:
-        logger.error(f"✗ Error en WebSocket: {str(e)}")
+        logger.error(f"Error inesperado en la conexión WebSocket para el trabajo {job_id}: {e}", exc_info=True)
         manager.disconnect(websocket, job_id)
 
+
+# --- Funciones Auxiliares para Celery ---
+# Estas funciones son llamadas desde las tareas de Celery (que se ejecutan en
+# otro proceso) para enviar mensajes a los clientes conectados.
 
 async def send_job_progress_update(
     job_id: str,
     status: JobStatus,
     processed_records: int,
     total_records: int,
-    current_action: str = None,
-    latest_log: str = None,
+    current_action: str | None = None,
+    latest_log: str | None = None,
 ):
     """
-    Función auxiliar para enviar actualizaciones de progreso.
-
-    Esta función debe ser llamada desde las tareas de Celery cuando hay
-    actualizaciones en el progreso del job.
-
-    **Ejemplo de uso desde Celery:**
-    ```python
-    from app.api.websocket import send_job_progress_update
-
-    await send_job_progress_update(
-        job_id=job.id,
-        status=JobStatus.RUNNING,
-        processed_records=50,
-        total_records=100,
-        current_action="Descargando documento 50...",
-        latest_log="Archivo descargado: factura_50.pdf"
-    )
-    ```
+    Envía una actualización del progreso de un trabajo a los clientes.
     """
+    percentage = (processed_records / total_records * 100) if total_records > 0 else 0
     message = {
         "type": "progress",
         "job_id": job_id,
         "status": status.value,
         "processed_records": processed_records,
         "total_records": total_records,
-        "progress_percentage": (
-            (processed_records / total_records * 100) if total_records > 0 else 0
-        ),
+        "progress_percentage": round(percentage, 2),
         "current_action": current_action,
         "latest_log": latest_log,
     }
-
     await manager.broadcast_to_job(message, job_id)
 
 
@@ -233,18 +182,7 @@ async def send_job_completed(
     failed_records: int,
 ):
     """
-    Notifica que un job ha completado su ejecución.
-
-    **Ejemplo:**
-    ```python
-    await send_job_completed(
-        job_id=job.id,
-        status=JobStatus.COMPLETED,
-        total_files_downloaded=250,
-        successful_records=248,
-        failed_records=2
-    )
-    ```
+    Notifica a los clientes que un trabajo ha finalizado.
     """
     message = {
         "type": "completed",
@@ -256,24 +194,12 @@ async def send_job_completed(
             "failed_records": failed_records,
         },
     }
-
     await manager.broadcast_to_job(message, job_id)
 
 
 async def send_job_error(job_id: str, error_message: str):
     """
-    Notifica que ha ocurrido un error en un job.
+    Informa a los clientes que ha ocurrido un error grave en el trabajo.
     """
     message = {"type": "error", "job_id": job_id, "error_message": error_message}
-
     await manager.broadcast_to_job(message, job_id)
-
-
-# Exportar el manager para uso en otras partes del código
-__all__ = [
-    "router",
-    "manager",
-    "send_job_progress_update",
-    "send_job_completed",
-    "send_job_error",
-]

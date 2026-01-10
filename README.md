@@ -1,156 +1,101 @@
 # Éxmado
 
-**Éxmado** (_Extracción Masiva de Documentos_) - Sistema de autoservicio para descarga masiva de documentos desde DocuWare.
+**Éxmado** (_Extracción Masiva de Documentos_) es un sistema de autoservicio diseñado para que vos podás realizar descargas masivas de documentos desde DocuWare de forma sencilla y autónoma.
 
-## 🎯 ¿Qué es Éxmado?
+## 🎯 ¿Qué Problema Resolvemos?
 
-Éxmado es una aplicación web que permite a usuarios no técnicos realizar descargas masivas de documentos desde DocuWare de forma autónoma, sin necesidad de solicitar scripts personalizados cada vez.
+En lugar de solicitar scripts personalizados cada vez que necesitás una descarga masiva, Éxmado te da una interfaz web para que vos mismo configurés y ejecutés los trabajos de extracción, monitoreando el progreso en tiempo real.
 
 ### Características Principales
 
-- ✅ **Autoservicio**: Los usuarios pueden configurar y ejecutar sus propias descargas
-- ✅ **Configuración Flexible**: Mapeo dinámico de campos entre Excel y DocuWare
-- ✅ **Procesamiento Asíncrono**: Descarga miles de documentos en segundo plano
-- ✅ **Monitoreo en Tiempo Real**: Seguimiento del progreso con estadísticas detalladas
-- ✅ **Transformaciones Automáticas**: Conversión TIF a PDF, renombrado inteligente
-- ✅ **Historial Completo**: Registro de todas las descargas realizadas
-- ✅ **Modo de Prueba**: Validar configuración antes de descargas masivas
-
-## 📚 Documentación
-
-- [Guía de Usuario](docs/user_guide.md) _(próximamente)_
-- [Documentación de API](docs/api.md) _(próximamente)_
-- [Guía de Instalación](backend/README.md)
-
-## 🏗️ Arquitectura
-
-```
-┌─────────────┐
-│   Frontend  │  React + TypeScript
-│   (Web UI)  │
-└──────┬──────┘
-       │ REST API
-┌──────▼──────┐
-│   Backend   │  FastAPI + Python
-│  (API REST) │
-└──────┬──────┘
-       │
-┌──────▼──────┐
-│    Celery   │  Procesamiento asíncrono
-│   Workers   │
-└──────┬──────┘
-       │
-┌──────▼──────┐
-│   DocuWare  │  API de DocuWare
-│     API     │
-└─────────────┘
-```
-
-**Stack Tecnológico:**
-
-- Backend: Python 3.10+, FastAPI, SQLAlchemy, Celery
-- Frontend: React, TypeScript, Material-UI
-- Base de datos: SQLite (desarrollo) / PostgreSQL (producción)
-- Cola de tareas: Redis + Celery
-
-## 🚀 Instalación y Ejecución
-
-Este proyecto se compone de un backend (API REST con Python/FastAPI) y un frontend (aplicación web con React/TypeScript). Para levantarlo completamente, necesitarás seguir las instrucciones de cada parte.
-
-- **Para instrucciones detalladas del Backend, ve a 👉 `backend/README.md`**
-- **Para instrucciones detalladas del Frontend, ve a 👉 `frontend/README.md`**
-
-### Resumen Rápido
-
-1.  **Backend**: Instalar dependencias de Python, configurar el archivo `.env`, iniciar Redis con Docker y arrancar el servidor FastAPI y el worker de Celery.
-2.  **Frontend**: Instalar dependencias de Node.js y arrancar el servidor de desarrollo de Vite.
-
-## 📖 Casos de Uso
-
-### Caso 1: Auditoría necesita facturas de proveedores
-
-1. Usuario sube Excel con códigos de proveedor y números de orden
-2. Configura mapeo: `Columna_Excel → Campo_DocuWare`
-3. Define estructura de carpetas: `Año/Proveedor/Documento`
-4. Ejecuta prueba con 10 registros
-5. Si todo está bien, ejecuta descarga completa (500+ documentos)
-6. Monitorea progreso en tiempo real
-7. Recibe notificación al terminar
-
-### Caso 2: Descarga masiva para requerimiento fiscal
-
-1. Usuario configura conversión automática TIF → PDF
-2. Define patrón de renombrado personalizado
-3. Ejecuta descarga de 17,000 documentos
-4. Sistema procesa en 2-3 horas
-5. Usuario puede pausar/reanudar si necesita
-
-## 🔧 Desarrollo
-
-### Estructura del Proyecto
-
-```
-exmado/
-├── backend/           # API REST y lógica de negocio (FastAPI)
-│   └── ...
-├── frontend/          # Aplicación web (React + TypeScript)
-│   └── ...
-└── docs/              # Documentación general
-```
-
-### Contribuir
-
-Este es un proyecto interno. Para sugerencias o reportar problemas:
-
-1. Crear un issue en GitHub
-2. Contactar al equipo de desarrollo
-3. Enviar pull request (previa coordinación)
-
-## 📊 Estado del Proyecto
-
-**Fase Actual:** Desarrollo activo de Backend y Frontend.
-
-- **Backend (FastAPI):**
-    - [x] Lógica de negocio principal implementada.
-    - [x] Endpoints de API funcionales.
-    - [x] Tareas asíncronas con Celery operativas.
-    - [ ] Pendiente: Mejorar cobertura de tests.
-- **Frontend (React):**
-    - [x] Estructura base y componentes principales listos.
-    - [x] Conexión con API y WebSockets funcional.
-    - [x] Asistente de creación de nuevas tareas (CreateJobWizard).
-    - [ ] Pendiente: Desarrollo de vistas de detalle.
-
-## ⚠️ Notas de Seguridad
-
-- **NUNCA** subir archivos `.env` con credenciales reales
-- Las credenciales de DocuWare deben manejarse exclusivamente via variables de entorno
-- Para producción, usar secretos gestionados (AWS Secrets Manager, Azure Key Vault, etc.)
-
-## 💡 Implementaciones Futuras
-
-- **Migración de Base de Datos**: Cambiar de SQLite a PostgreSQL para el entorno de producción.
-- **Autenticación de Usuarios**: Implementar un sistema de login para gestionar el acceso.
-- **Tests Unitarios**: Aumentar la cobertura de tests tanto en el backend como en el frontend.
-- **Modo Oscuro**: Añadir un tema oscuro en la interfaz del frontend.
-
-## 📝 Licencia
-
-Uso interno exclusivo. Todos los derechos reservados.
-
-## 👥 Equipo
-
-**Desarrollado por:** Luis Oseguera - Equipo de Aplicaciones
-**Organización:** Servicios Compartidos
-**Año:** 2025
-
-## 📞 Soporte
-
-Para soporte técnico:
-
-- Email: loseguera@servicioscompartidos.com
-- Teams: Canal de IT - Equipo de Aplicaciones
+- **Autoservicio:** Creá y gestioná tus propias descargas sin depender de IT.
+- **Configuración Flexible:** Mapeá dinámicamente las columnas de tu Excel con los campos de DocuWare.
+- **Procesamiento Asíncrono:** La aplicación trabaja en segundo plano para descargar miles de documentos sin bloquear tu computadora.
+- **Monitoreo en Tiempo Real:** Mirá el progreso de tus trabajos de descarga al instante.
+- **Historial Completo:** Llevá un registro de todas las extracciones que has realizado.
 
 ---
 
-**Estado:** 🚧 En desarrollo activo
+## 🚀 Cómo Poner a Correr el Proyecto
+
+Gracias a Docker, levantar todo el entorno de desarrollo es súper sencillo. Solo necesitás tener **Docker** y **Docker Compose** instalados en tu máquina.
+
+**¡Y listo! Con un solo comando, tenés todo funcionando:**
+
+```bash
+docker-compose up --build
+```
+
+Este comando hará lo siguiente:
+1.  **Construirá las imágenes** de Docker para el frontend y el backend.
+2.  **Levantará todos los servicios** en contenedores separados:
+    -   `frontend`: La aplicación web de React.
+    -   `backend`: La API de FastAPI.
+    -   `celery_worker`: El trabajador que procesa las descargas.
+    -   `redis`: El sistema que gestiona la cola de tareas.
+    -   `nginx`: El servidor que dirige el tráfico a los servicios correctos.
+3.  Una vez que todo esté corriendo, podés acceder a la aplicación en tu navegador en la siguiente dirección: **[http://localhost:8080](http://localhost:8080)**
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+El proyecto está completamente "containerizado" usando Docker, lo que asegura que funcione de la misma manera en cualquier máquina.
+
+```
+                  ┌────────────────┐
+                  │   Tu Navegador │
+                  └───────┬────────┘
+                          │ (localhost:8080)
+                  ┌───────▼────────┐
+                  │     Nginx      │ (Proxy Inverso)
+                  └───────┬────────┘
+          ┌───────────────┴───────────────┐
+          │ (peticiones /api)             │ (otras peticiones)
+┌─────────▼─────────┐             ┌───────▼─────────┐
+│     Backend       │             │     Frontend    │
+│    (FastAPI)      │             │     (React)     │
+└─────────┬─────────┘             └─────────────────┘
+          │ (tareas)
+┌─────────▼─────────┐             ┌────────────────┐
+│  Celery Worker(s) │◀───────────▶│      Redis     │
+└─────────┬─────────┘             │ (Cola de Tareas)│
+          │                       └────────────────┘
+┌─────────▼─────────┐
+│  API de DocuWare  │
+└───────────────────┘
+```
+
+### Stack Tecnológico
+
+- **Backend:** Python, FastAPI, Celery, SQLAlchemy.
+- **Frontend:** React, TypeScript, Material-UI, TanStack Query.
+- **Infraestructura:** Docker, Docker Compose, Nginx.
+- **Base de Datos:** SQLite (para desarrollo, dentro del contenedor del backend).
+- **Cola de Tareas:** Redis.
+
+---
+
+## 🔧 Desarrollo y Estructura
+
+El código está organizado en dos carpetas principales:
+
+```
+exmado/
+├── backend/     # Contiene toda la lógica de la API y los trabajadores de Celery.
+├── frontend/    # Contiene toda la aplicación web construida en React.
+├── nginx.conf   # Configuración del proxy inverso Nginx.
+└── docker-compose.yml # El archivo que orquesta todos los servicios.
+```
+
+### Notas Importantes para el Desarrollo
+
+- **Variables de Entorno:** Las credenciales y configuraciones sensibles (como las de DocuWare) se deben gestionar a través de un archivo `.env` dentro de la carpeta `backend/`. **Nunca subás este archivo a Git.**
+- **Volúmenes de Docker:** El `docker-compose.yml` está configurado para montar tu código local directamente en los contenedores (`./frontend:/app` y `./backend:/app`). Esto significa que cualquier cambio que guardés en tu código se reflejará automáticamente en la aplicación en ejecución, sin necesidad de reconstruir la imagen. Simplemente guardá y el servidor de desarrollo se recargará solo.
+
+## 💡 Próximos Pasos
+
+- **Solucionar el Problema del WebSocket:** Diagnosticar y corregir el error que impide la comunicación en tiempo real para el progreso de los trabajos.
+- **Migrar a PostgreSQL:** Cambiar la base de datos de SQLite a PostgreSQL para un entorno de producción más robusto.
+- **Autenticación de Usuarios:** Implementar un sistema de inicio de sesión para controlar el acceso.
+- **Expandir Cobertura de Pruebas:** Añadir más pruebas unitarias y de integración.

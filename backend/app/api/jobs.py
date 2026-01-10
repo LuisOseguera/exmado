@@ -1,7 +1,10 @@
 """
-Endpoints para gestión de Jobs (trabajos de descarga).
-"""
+Endpoints para la Gestión de Trabajos (Jobs)
 
+Este módulo define todas las operaciones de la API relacionadas con los trabajos
+de descarga, como crear, listar, obtener detalles, actualizar, eliminar e iniciar
+un trabajo.
+"""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from loguru import logger
@@ -19,6 +22,8 @@ from app.schemas import (
     JobUpdate,
 )
 
+# Creamos un enrutador específico para los endpoints de trabajos.
+# Esto nos ayuda a mantener el código ordenado y modular.
 router = APIRouter()
 
 
@@ -29,20 +34,18 @@ def create_job(
     current_user: str = Depends(get_current_user),
 ):
     """
-    Crea un nuevo job de descarga.
+    Crea un nuevo trabajo de descarga.
 
-    **Flujo:**
-    1. Valida los datos del job
-    2. Crea el registro en la base de datos
-    3. Retorna el job creado
-    4. (La ejecución real se hace en una tarea de Celery)
+    Cuando vos mandás una petición a este endpoint, se valida la información,
+    se crea un nuevo registro 'Job' en la base de datos y, si está configurado,
+    se encola una tarea de Celery para que se ejecute en segundo plano.
     """
     try:
-        # Crear nuevo job
+        # Creamos una nueva instancia del modelo Job con la información recibida.
         new_job = Job(
             user_name=job_data.user_name or current_user,
             excel_file_name=job_data.excel_file_name,
-            excel_file_path=f"uploads/{job_data.excel_file_name}",  # TODO: usar path real
+            excel_file_path=f"uploads/{job_data.excel_file_name}",
             output_directory=job_data.output_directory,
             config=job_data.config.model_dump(),
             status=JobStatus.PENDING,
@@ -52,9 +55,10 @@ def create_job(
         db.commit()
         db.refresh(new_job)
 
-        logger.info(f"✓ Job creado: {new_job.id}")
+        logger.info(f"Trabajo creado exitosamente con ID: {new_job.id}")
 
-        # Auto-iniciar si está configurado
+        # Si el trabajo se configuró para iniciarse automáticamente,
+        # encolamos la tarea de Celery de inmediato.
         if job_data.config.auto_start:
             from app.tasks.download_task import process_job
 
@@ -63,16 +67,16 @@ def create_job(
             new_job.status = JobStatus.RUNNING
             db.commit()
             db.refresh(new_job)
-            logger.info(f"✓ Tarea de Celery encolada: {task.id}")
+            logger.info(f"El trabajo {new_job.id} se ha encolado en Celery con el ID de tarea: {task.id}")
 
         return new_job.to_dict()
 
     except Exception as e:
-        logger.error(f"✗ Error al crear job: {str(e)}")
+        logger.error(f"Fallo monumental al crear el trabajo: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al crear job: {str(e)}",
+            detail=f"No pudimos crear el trabajo. Error: {e}",
         ) from e
 
 
@@ -83,35 +87,25 @@ def list_jobs(
     status_filter: JobStatus | None = None,
     user_filter: str | None = None,
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user),
 ):
     """
-    Lista todos los jobs con paginación y filtros opcionales.
+    Lista todos los trabajos con paginación y filtros opcionales.
 
-    **Parámetros:**
-    - skip: Cantidad de registros a saltar (default: 0)
-    - limit: Cantidad máxima de registros (default: 50, max: 100)
-    - status_filter: Filtrar por estado (opcional)
-    - user_filter: Filtrar por usuario (opcional)
+    Este endpoint te permite consultar los trabajos existentes. Podés filtrar
+    por estado o por usuario, y paginar los resultados para no sobrecargar
+    ni el servidor ni el cliente.
     """
     try:
-        # Construir query base
         query = db.query(Job)
 
-        # Aplicar filtros
         if status_filter:
             query = query.filter(Job.status == status_filter)
 
         if user_filter:
             query = query.filter(Job.user_name == user_filter)
 
-        # Contar total
         total = query.count()
-
-        # Aplicar paginación y ordenar por más reciente
         jobs = query.order_by(Job.created_at.desc()).offset(skip).limit(limit).all()
-
-        # Convertir a dict
         jobs_data = [job.to_dict() for job in jobs]
 
         return {
@@ -122,23 +116,23 @@ def list_jobs(
         }
 
     except Exception as e:
-        logger.error(f"✗ Error al listar jobs: {str(e)}")
+        logger.error(f"Fallo al intentar listar los trabajos: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al listar jobs: {str(e)}",
+            detail=f"No se pudieron listar los trabajos. Error: {e}",
         ) from e
 
 
 @router.get("/{job_id}", response_model=JobResponse)
 def get_job(job_id: str, db: Session = Depends(get_db)):
     """
-    Obtiene un job específico por su ID.
+    Obtiene un trabajo específico por su ID.
     """
     job = db.query(Job).filter(Job.id == job_id).first()
 
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"El trabajo con ID {job_id} no fue encontrado."
         )
 
     return job.to_dict()
@@ -147,19 +141,19 @@ def get_job(job_id: str, db: Session = Depends(get_db)):
 @router.patch("/{job_id}", response_model=JobResponse)
 def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(get_db)):
     """
-    Actualiza un job (principalmente para pausar/reanudar/cancelar).
+    Actualiza el estado de un trabajo (ej: pausar, reanudar, cancelar).
     """
     job = db.query(Job).filter(Job.id == job_id).first()
 
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"El trabajo con ID {job_id} no fue encontrado."
         )
 
     try:
-        # Actualizar solo los campos proporcionados
         if job_update.status:
-            # Validar transiciones de estado válidas
+            # Lógica para validar transiciones de estado.
+            # No cualquier estado puede cambiar a cualquier otro.
             valid_transitions = {
                 JobStatus.PENDING: [JobStatus.RUNNING, JobStatus.CANCELLED],
                 JobStatus.RUNNING: [JobStatus.PAUSED, JobStatus.CANCELLED],
@@ -169,68 +163,63 @@ def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(get_db)
             current_status = job.status
             new_status = job_update.status
 
-            if current_status in valid_transitions:
-                if new_status not in valid_transitions[current_status]:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Transición inválida: {current_status} → {new_status}",
-                    )
+            if current_status in valid_transitions and new_status not in valid_transitions[current_status]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Transición de estado inválida de {current_status.value} a {new_status.value}.",
+                )
 
             job.status = new_status
 
-            # TODO: Si se pausa/cancela, notificar a la tarea de Celery
-            # if new_status == JobStatus.CANCELLED:
-            #     celery_app.control.revoke(job.celery_task_id, terminate=True)
+            # Aquí iría la lógica para interactuar con Celery si se cancela o pausa la tarea.
+            # Por ejemplo: `celery_app.control.revoke(job.celery_task_id, terminate=True)`
 
         db.commit()
         db.refresh(job)
-
-        logger.info(f"✓ Job actualizado: {job_id}")
+        logger.info(f"Trabajo {job_id} actualizado al estado: {job.status.value}")
         return job.to_dict()
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"✗ Error al actualizar job: {str(e)}")
+        logger.error(f"Fallo al actualizar el trabajo {job_id}: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al actualizar job: {str(e)}",
+            detail=f"No se pudo actualizar el trabajo. Error: {e}",
         ) from e
 
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job(job_id: str, db: Session = Depends(get_db)):
     """
-    Elimina un job y todos sus registros asociados.
-
-    **ADVERTENCIA:** Esta operación no se puede deshacer.
+    Elimina un trabajo y todos sus registros y logs asociados.
+    Ojo: Esta operación no se puede deshacer.
     """
     job = db.query(Job).filter(Job.id == job_id).first()
 
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"El trabajo con ID {job_id} no fue encontrado."
         )
 
-    # Verificar que no esté en ejecución
     if job.status == JobStatus.RUNNING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No se puede eliminar un job en ejecución. Cancélalo primero.",
+            detail="No podés eliminar un trabajo que se está ejecutando. Tenés que cancelarlo primero.",
         )
 
     try:
         db.delete(job)
         db.commit()
-        logger.info(f"✓ Job eliminado: {job_id}")
+        logger.info(f"Trabajo {job_id} eliminado exitosamente.")
 
     except Exception as e:
-        logger.error(f"✗ Error al eliminar job: {str(e)}")
+        logger.error(f"Fallo al eliminar el trabajo {job_id}: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al eliminar job: {str(e)}",
+            detail=f"No se pudo eliminar el trabajo. Error: {e}",
         ) from e
 
 
@@ -243,24 +232,20 @@ def get_job_records(
     db: Session = Depends(get_db),
 ):
     """
-    Obtiene los records (registros individuales) de un job.
+    Obtiene los registros individuales de un trabajo (las filas del Excel).
     """
-    # Verificar que el job existe
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"El trabajo con ID {job_id} no fue encontrado."
         )
 
-    # Construir query
     query = db.query(JobRecord).filter(JobRecord.job_id == job_id)
 
     if status_filter:
         query = query.filter(JobRecord.status == status_filter)
 
-    # Ordenar por número de fila
     records = query.order_by(JobRecord.excel_row_number).offset(skip).limit(limit).all()
-
     return [record.to_dict() for record in records]
 
 
@@ -273,24 +258,20 @@ def get_job_logs(
     db: Session = Depends(get_db),
 ):
     """
-    Obtiene los logs de un job.
+    Obtiene los logs de ejecución de un trabajo.
     """
-    # Verificar que el job existe
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"El trabajo con ID {job_id} no fue encontrado."
         )
 
-    # Construir query
     query = db.query(JobLog).filter(JobLog.job_id == job_id)
 
     if level_filter:
         query = query.filter(JobLog.level == level_filter)
 
     total = query.count()
-
-    # Ordenar por timestamp descendente (más reciente primero)
     logs = query.order_by(JobLog.timestamp.desc()).offset(skip).limit(limit).all()
 
     return {"logs": [log.to_dict() for log in logs], "total": total}
@@ -299,28 +280,23 @@ def get_job_logs(
 @router.post("/{job_id}/start", response_model=JobResponse)
 def start_job(job_id: str, db: Session = Depends(get_db)):
     """
-    Inicia la ejecución de un job pendiente.
-
-    Este endpoint encola la tarea de Celery para procesamiento asíncrono.
+    Inicia la ejecución de un trabajo que está en estado 'pendiente'.
     """
     job = db.query(Job).filter(Job.id == job_id).first()
 
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"El trabajo con ID {job_id} no fue encontrado."
         )
 
     if job.status != JobStatus.PENDING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Job debe estar en estado PENDING. Estado actual: {job.status}",
+            detail=f"El trabajo debe estar en estado 'PENDING' para poder iniciarse. Estado actual: {job.status.value}",
         )
 
     try:
-        # Cambiar estado a RUNNING
         job.status = JobStatus.RUNNING
-
-        # Encolar tarea de Celery
         from app.tasks.download_task import process_job
 
         task = process_job.delay(job_id)
@@ -329,13 +305,13 @@ def start_job(job_id: str, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(job)
 
-        logger.info(f"✓ Job iniciado: {job_id} (Task: {task.id})")
+        logger.info(f"Se inició el trabajo {job_id}. ID de tarea de Celery: {task.id}")
         return job.to_dict()
 
     except Exception as e:
-        logger.error(f"✗ Error al iniciar job: {str(e)}")
+        logger.error(f"Fallo al iniciar el trabajo {job_id}: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al iniciar job: {str(e)}",
+            detail=f"No se pudo iniciar el trabajo. Error: {e}",
         ) from e
