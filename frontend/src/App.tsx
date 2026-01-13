@@ -17,6 +17,7 @@ import { SnackbarProvider } from 'notistack';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SnackbarUtilsConfigurator } from './utils/snackbar';
 import JobsList from '@/components/JobsList';
+import CreateJobWizard from '@/components/CreateJobWizard';
 import JobDetails from '@/components/JobDetails';
 import { useState } from 'react';
 
@@ -52,17 +53,24 @@ import { useJobsList } from './hooks/api/jobs';
 // Creamos un componente simple para el layout principal de la página.
 const MainLayout = () => {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const { data: jobsData, isLoading, error } = useJobsList({ limit: 50 });
 
+  const handleJobCreated = (jobId: string) => {
+    setIsWizardOpen(false);
+    setSelectedJobId(jobId);
+  };
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh', p: 2, gap: 2, backgroundColor: '#f4f6f8' }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <Typography variant="h5" gutterBottom>
-                  Éxmado
-              </Typography>
+    <>
+      <Box sx={{ display: 'flex', height: '100vh', p: 2, gap: 2, backgroundColor: '#f4f6f8' }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <Typography variant="h5" gutterBottom>
+                    Éxmado
+                </Typography>
               <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                   Sistema de Extracción Masiva de Documentos
               </Typography>
@@ -70,7 +78,7 @@ const MainLayout = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => console.log('Crear nuevo job')}
+              onClick={() => setIsWizardOpen(true)}
             >
               Nuevo Job
             </Button>
@@ -100,6 +108,12 @@ const MainLayout = () => {
         </Grid>
       </Grid>
     </Box>
+      <CreateJobWizard
+        open={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onJobCreated={handleJobCreated}
+      />
+    </>
   );
 };
 
