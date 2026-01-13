@@ -23,9 +23,9 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { JobStatus, type Job } from '@/types';
-import { useJobsList } from '@/hooks/api/jobs';
 
 interface JobsListProps {
+  jobs: Job[];
   statusFilter?: string[];
   onJobSelect: (jobId: string) => void;
   selectedJobId: string | null;
@@ -78,31 +78,14 @@ const statusConfig: Record<
 };
 
 export default function JobsList({
+  jobs,
   statusFilter,
   onJobSelect,
   selectedJobId,
 }: JobsListProps) {
-  const { data, isLoading, error } = useJobsList({ limit: 50 });
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography color="error">Error al cargar jobs</Typography>
-      </Box>
-    );
-  }
-
   // Filtrar jobs por estado
   const filteredJobs =
-    data?.jobs.filter((job) =>
+    jobs.filter((job) =>
       statusFilter ? statusFilter.includes(job.status) : true
     ) || [];
 

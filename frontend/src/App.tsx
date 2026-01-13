@@ -45,21 +45,55 @@ const theme = createTheme({
   },
 });
 
+import { Button, CircularProgress, Paper } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { useJobsList } from './hooks/api/jobs';
+
 // Creamos un componente simple para el layout principal de la página.
 const MainLayout = () => {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const { data: jobsData, isLoading, error } = useJobsList({ limit: 50 });
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', p: 2, gap: 2, backgroundColor: '#f4f6f8' }}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={4} lg={3}>
-            <Typography variant="h5" gutterBottom>
-                Éxmado
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                Sistema de Extracción Masiva de Documentos
-            </Typography>
-          <JobsList onJobSelect={setSelectedJobId} selectedJobId={selectedJobId} />
+        <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <Typography variant="h5" gutterBottom>
+                  Éxmado
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                  Sistema de Extracción Masiva de Documentos
+              </Typography>
+            </div>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => console.log('Crear nuevo job')}
+            >
+              Nuevo Job
+            </Button>
+          </Box>
+          <Paper sx={{ flex: 1, overflow: 'auto' }}>
+            {isLoading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
+            )}
+            {error && (
+              <Box sx={{ p: 2 }}>
+                <Typography color="error">Error al cargar jobs</Typography>
+              </Box>
+            )}
+            {jobsData && !isLoading && !error && (
+              <JobsList
+                jobs={jobsData.jobs}
+                onJobSelect={setSelectedJobId}
+                selectedJobId={selectedJobId}
+              />
+            )}
+          </Paper>
         </Grid>
         <Grid item xs={12} md={8} lg={9}>
           <JobDetails jobId={selectedJobId} />
