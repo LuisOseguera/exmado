@@ -38,17 +38,13 @@ import { useDropzone } from 'react-dropzone';
 import { useSnackbar } from 'notistack';
 import { AxiosError } from 'axios';
 
-import { jobsApi, excelApi } from '../services/api';
-import {
-  useCabinets,
-  useDialogs,
-  useFields,
-} from '../hooks/api/docuware';
+import { jobsApi, excelApi } from '@/services/api';
+import { useCabinets, useDialogs, useFields } from '@/hooks/api/docuware';
 import type {
   CreateJobRequest,
   ExcelValidation,
   SearchFieldMapping,
-} from '../types';
+} from '@/types';
 
 interface CreateJobWizardProps {
   open: boolean;

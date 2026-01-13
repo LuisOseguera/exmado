@@ -3,11 +3,6 @@
  *
  * Este archivo centraliza toda la comunicación con el backend. Utilizamos `axios`
  * para crear una instancia pre-configurada que nos facilita hacer peticiones HTTP.
- *
- * Aquí definimos la URL base de la API y un "interceptor" que maneja
- * automáticamente los errores de todas las peticiones, mostrando una notificación
- * al usuario. También agrupamos las funciones de la API por recurso (Jobs, Excel, etc.)
- * para mantener el código ordenado.
  */
 import axios from 'axios';
 import type {
@@ -21,39 +16,27 @@ import type {
   DocuWareCabinet,
   DocuWareDialog,
   DocuWareField,
-  UploadedFile,
-  DocuWareDocument,
 } from '@/types';
 import SnackbarUtils from '@/utils/snackbar';
 
 // Creamos una instancia de axios con configuraciones por defecto.
 const api = axios.create({
-  // La URL base para todas las peticiones. Esto nos permite no tener que
-  // escribir '/api/v1' cada vez.
   baseURL: '/api/v1',
-  // Si una petición tarda más de 30 segundos, la cancelamos.
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Este 'interceptor' es una pieza clave. Es como un vigilante que revisa
-// todas las respuestas que llegan del servidor.
+// Interceptor para manejar errores globalmente
 api.interceptors.response.use(
-  // Si la respuesta fue exitosa (código 2xx), simplemente la dejamos pasar.
   (response) => response,
-  // Si la respuesta trae un error...
   (error) => {
-    // Intentamos sacar el mensaje de error que nos manda el backend.
-    // Si no existe, usamos el mensaje de error general de la petición.
-    const message = error.response?.data?.detail || error.message || 'Ocurrió un error inesperado.';
-
-    // Usamos nuestro sistema de notificaciones para mostrarle el error al usuario.
+    const message =
+      error.response?.data?.detail ||
+      error.message ||
+      'Ocurrió un error inesperado.';
     SnackbarUtils.error(message);
-
-    // Es importante rechazar la promesa para que el código que hizo la llamada
-    // (por ejemplo, en React Query) sepa que la petición falló.
     return Promise.reject(error);
   }
 );
@@ -121,7 +104,9 @@ export const jobsApi = {
     jobId: string,
     params?: { status_filter?: string; skip?: number; limit?: number }
   ): Promise<JobRecord[]> => {
-    const { data } = await api.get<JobRecord[]>(`/jobs/${jobId}/records`, { params });
+    const { data } = await api.get<JobRecord[]>(`/jobs/${jobId}/records`, {
+      params,
+    });
     return data;
   },
 
@@ -132,7 +117,9 @@ export const jobsApi = {
     jobId: string,
     params?: { level_filter?: string; skip?: number; limit?: number }
   ): Promise<JobLogsResponse> => {
-    const { data } = await api.get<JobLogsResponse>(`/jobs/${jobId}/logs`, { params });
+    const { data } = await api.get<JobLogsResponse>(`/jobs/${jobId}/logs`, {
+      params,
+    });
     return data;
   },
 };
@@ -163,13 +150,78 @@ export const excelApi = {
       formData.append('sheet_index', sheetIndex.toString());
     }
 
-    const { data } = await api.post<ExcelValidation>('/excel/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await api.post<ExcelValidation>(
+      '/excel/upload',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
     return data;
   },
 
-  // ... (otros endpoints de excelApi)
+  /**
+   * Valida un Excel existente en el servidor.
+   */
+  validate: async (
+    filePath: string,
+    requiredColumns?: string[],
+    sheetName?: string,
+    sheetIndex?: number
+  ): Promise<ExcelValidation> => {
+    const formData = new FormData();
+    formData.append('file_path', filePath);
+
+    if (requiredColumns?.length) {
+      formData.append('required_columns', requiredColumns.join(','));
+    }
+    if (sheetName) {
+      formData.append('sheet_name', sheetName);
+    }
+    if (sheetIndex !== undefined) {
+      formData.append('sheet_index', sheetIndex.toString());
+    }
+
+    const { data } = await api.post<ExcelValidation>(
+      '/excel/validate',
+      formData
+    );
+    return data;
+  },
+
+  /**
+   * Lista los archivos Excel subidos por el usuario.
+   */
+  listUploads: async (): Promise<{ files: unknown[] }> => {
+    const { data } = await api.get('/excel/list-uploads');
+    return data;
+  },
+
+  /**
+   * Obtiene las hojas de un archivo Excel.
+   */
+  getSheets: async (
+    filename: string
+  ): Promise<{ filename: string; sheets: string[]; total_sheets: number }> => {
+    const { data } = await api.get(`/excel/sheets/${filename}`);
+    return data;
+  },
+
+  /**
+   * Obtiene una vista previa de un archivo Excel.
+   */
+  preview: async (
+    filename: string,
+    params?: { sheet_name?: string; sheet_index?: number; n_rows?: number }
+  ): Promise<{
+    filename: string;
+    total_rows: number;
+    columns: string[];
+    preview: Record<string, unknown>[];
+  }> => {
+    const { data } = await api.get(`/excel/preview/${filename}`, { params });
+    return data;
+  },
 };
 
 // ====================================================================
@@ -179,12 +231,114 @@ export const docuwareApi = {
   /**
    * Prueba la conexión con el servidor de DocuWare.
    */
-  testConnection: async (): Promise<{ status: string; message: string; server_url: string; username: string; }> => {
+  testConnection: async (): Promise<{
+    status: string;
+    message: string;
+    server_url: string;
+    username: string;
+  }> => {
     const { data } = await api.get('/docuware/test-connection');
     return data;
   },
 
-  // ... (otros endpoints de docuwareApi)
+  /**
+   * Lista todos los file cabinets disponibles.
+   */
+  listCabinets: async (): Promise<{
+    cabinets: DocuWareCabinet[];
+    total: number;
+  }> => {
+    const { data } = await api.get('/docuware/cabinets');
+    return data;
+  },
+
+  /**
+   * Lista los diálogos de búsqueda de un cabinet.
+   */
+  listDialogs: async (
+    cabinetId: string
+  ): Promise<{
+    dialogs: DocuWareDialog[];
+    total: number;
+    cabinet_id: string;
+  }> => {
+    const { data } = await api.get(`/docuware/cabinets/${cabinetId}/dialogs`);
+    return data;
+  },
+
+  /**
+   * Lista los campos de un cabinet.
+   */
+  listFields: async (
+    cabinetId: string
+  ): Promise<{
+    fields: DocuWareField[];
+    total: number;
+    cabinet_id: string;
+  }> => {
+    const { data } = await api.get(`/docuware/cabinets/${cabinetId}/fields`);
+    return data;
+  },
+
+  /**
+   * Busca documentos en DocuWare.
+   */
+  searchDocuments: async (
+    cabinetId: string,
+    dialogId: string,
+    searchParams: Record<string, unknown>
+  ): Promise<{
+    documents: unknown[];
+    total: number;
+    cabinet_id: string;
+    dialog_id: string;
+  }> => {
+    const { data } = await api.post('/docuware/search', {
+      cabinet_id: cabinetId,
+      dialog_id: dialogId,
+      search_params: searchParams,
+    });
+    return data;
+  },
+
+  /**
+   * Obtiene información de un documento específico.
+   */
+  getDocument: async (
+    cabinetId: string,
+    documentId: string
+  ): Promise<unknown> => {
+    const { data } = await api.get(
+      `/docuware/documents/${cabinetId}/${documentId}`
+    );
+    return data;
+  },
+
+  /**
+   * Obtiene los documentos vinculados de un documento.
+   */
+  getDocumentLinks: async (
+    cabinetId: string,
+    documentId: string
+  ): Promise<{ document_id: string; links: unknown[]; total: number }> => {
+    const { data } = await api.get(
+      `/docuware/documents/${cabinetId}/${documentId}/links`
+    );
+    return data;
+  },
+
+  /**
+   * Obtiene la configuración actual de DocuWare.
+   */
+  getConfig: async (): Promise<{
+    server_url: string;
+    username: string;
+    timeout: number;
+    configured: boolean;
+  }> => {
+    const { data } = await api.get('/docuware/config');
+    return data;
+  },
 };
 
 export default api;
