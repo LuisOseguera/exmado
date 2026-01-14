@@ -17,7 +17,6 @@ import { SnackbarProvider } from 'notistack';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SnackbarUtilsConfigurator } from './utils/snackbar';
 import JobsList from '@/components/JobsList';
-import CreateJobWizard from '@/components/CreateJobWizard';
 import JobDetails from '@/components/JobDetails';
 import { useState } from 'react';
 
@@ -48,6 +47,7 @@ const theme = createTheme({
 
 import { Button, CircularProgress, Paper } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import CreateJobWizard from '@/components/CreateJobWizard';
 import { useJobsList } from './hooks/api/jobs';
 
 // Creamos un componente simple para el layout principal de la página.
@@ -71,43 +71,43 @@ const MainLayout = () => {
                 <Typography variant="h5" gutterBottom>
                     Éxmado
                 </Typography>
-              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                  Sistema de Extracción Masiva de Documentos
-              </Typography>
-            </div>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setIsWizardOpen(true)}
-            >
-              Nuevo Job
-            </Button>
-          </Box>
-          <Paper sx={{ flex: 1, overflow: 'auto' }}>
-            {isLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-              </Box>
-            )}
-            {error && (
-              <Box sx={{ p: 2 }}>
-                <Typography color="error">Error al cargar jobs</Typography>
-              </Box>
-            )}
-            {jobsData && !isLoading && !error && (
-              <JobsList
-                jobs={jobsData.jobs}
-                onJobSelect={setSelectedJobId}
-                selectedJobId={selectedJobId}
-              />
-            )}
-          </Paper>
+                <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                    Sistema de Extracción Masiva de Documentos
+                </Typography>
+              </div>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setIsWizardOpen(true)}
+              >
+                Nuevo Job
+              </Button>
+            </Box>
+            <Paper sx={{ flex: 1, overflow: 'auto' }}>
+              {isLoading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress />
+                </Box>
+              )}
+              {error && (
+                <Box sx={{ p: 2 }}>
+                  <Typography color="error">Error al cargar jobs</Typography>
+                </Box>
+              )}
+              {jobsData && !isLoading && !error && (
+                <JobsList
+                  jobs={jobsData.jobs}
+                  onJobSelect={setSelectedJobId}
+                  selectedJobId={selectedJobId}
+                />
+              )}
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={8} lg={9}>
+            <JobDetails jobId={selectedJobId} />
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={8} lg={9}>
-          <JobDetails jobId={selectedJobId} />
-        </Grid>
-      </Grid>
-    </Box>
+      </Box>
       <CreateJobWizard
         open={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
